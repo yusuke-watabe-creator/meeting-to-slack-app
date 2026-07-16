@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>商談メモ → Slack / Gmail 連携ツール</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ffffff;
+    color: #1f2328;
+    padding: 20px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .row .field { flex: 1; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px; }
+  input[type="text"], input[type="date"], select, textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: #1f2328;
+  }
+  textarea { resize: vertical; height: 80px; }
+  .card {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #fafafa;
+  }
+  .card-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #111827; }
+  .card-note { font-size: 11px; color: #6b7280; margin-bottom: 10px; }
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+  }
+  .btn-primary { background: #2563eb; }
+  .btn-primary:disabled { background: #93b4f0; cursor: not-allowed; }
+  .btn-slack { background: #4a154b; }
+  .btn-slack:disabled { background: #b79ab8; cursor: not-allowed; }
+  .btn-gmail { background: #c2410c; }
+  .btn-gmail:disabled { background: #e0a480; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+  .status { font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .status.ok { color: #15803d; }
+  .status.err { color: #b91c1c; }
+  .status.pending { color: #6b7280; }
+  .hidden { display: none; }
+  .search-row { display: flex; gap: 8px; }
+  .search-row input { flex: 1; }
+  .search-results { margin-top: 8px; max-height: 220px; overflow-y: auto; }
+  .search-result-item {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    background: #fff;
+  }
+  .search-result-item:hover { background: #f3f4f6; }
+  .search-result-item.selected { border-color: #2563eb; background: #eff6ff; }
+  .search-result-subject { font-weight: 600; margin-bottom: 2px; }
+  .search-result-meta { color: #6b7280; font-size: 11px; margin-bottom: 4px; }
+  .selected-banner {
+    font-size: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-top: 8px;
+    color: #1d4ed8;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">商談メモ → Slack / Gmail 連携ツール</div>
+  <div class="subtitle">商談内容を入力 → #渡部チーム--26年 へSlack投稿 / 先方へのフォローアップメール下書きをGmailに作成</div>
+
+  <div class="card">
+    <div class="card-title">1. 基本情報</div>
+    <div class="row">
+      <div class="field">
+        <label>商談日</label>
+        <input type="date" id="dealDate">
+      </div>
+      <div class="field">
+        <label>会社名・案件名</label>
+        <input type="text" id="dealName" placeholder="例: 株式会社◯◯様">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>担当者（メンション）</label>
+        <select id="assignee"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">2. 商談メモ（手入力）</div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>次回アクション</label>
+      <textarea id="nextAction" placeholder="例: 来週水曜までに見積書を送付"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>準備するもの</label>
+      <textarea id="prepItems" placeholder="例: 導入事例資料、概算見積り"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>案件フィードバック</label>
+      <textarea id="dealFeedback" placeholder="例: 予算感は合っている。決裁者との日程調整がボトルネック"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-slack" id="sendBtn">Slackに送信</button>
+      <span class="status pending" id="sendStatus"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">3. 先方へのフォローアップメール下書き（Gmail）</div>
+    <div class="card-note">初回操作時にGoogleログイン・権限の許可が求められます（gmotech.jpアカウントでログインしてください）。</div>
+
+    <div class="field" style="margin-bottom:10px;">
+      <label>前日リマインド等、返信元メールを検索（任意）</label>
+      <div class="search-row">
+        <input type="text" id="mailSearchQuery" placeholder="会社名・担当者名・宛先メールアドレスなど">
+        <button class="btn btn-primary" id="mailSearchBtn">検索</button>
+      </div>
+      <div class="search-results" id="mailSearchResults"></div>
+      <div class="selected-banner hidden" id="selectedBanner"></div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>先方のご担当者名（敬称なし）</label>
+        <input type="text" id="mailContactName" placeholder="例: 松下">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>宛先メールアドレス（カンマ区切りで複数可）</label>
+        <input type="text" id="mailTo" placeholder="example@client.co.jp">
+      </div>
+      <div class="field">
+        <label>CC</label>
+        <input type="text" id="mailCc">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>件名</label>
+      <input type="text" id="mailSubject" placeholder="例: 本日はお打ち合わせありがとうございました">
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>本文（手入力）</label>
+      <textarea id="mailBody" style="height:180px;" placeholder="本文を入力してください（署名は不要。担当者名を入力すると本文冒頭に「〇〇様」が自動挿入されます）"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gmail" id="createGmailBtn">Gmail下書きを作成</button>
+      <span class="status pending" id="gmailStatus"></span>
+    </div>
+  </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
+<script src="constants.js"></script>
+<script src="slack.js"></script>
+<script src="gmail.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
