@@ -1,8 +1,9 @@
 // Cloudflare Worker: 商談文字起こし → 次回アクション/準備するもの/案件フィードバック 抽出プロキシ
-// ANTHROPIC_API_KEYはCloudflareのシークレットとして保存し、ブラウザには一切渡さない。
+// GEMINI_API_KEYはCloudflareのシークレットとして保存し、ブラウザには一切渡さない。
+// Google AI Studio (https://aistudio.google.com/apikey) はクレジットカード登録不要の無料枠があるため採用。
 
 const ALLOWED_ORIGIN = 'https://yusuke-watabe-creator.github.io';
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = 'gemini-2.5-flash';
 
 function corsHeaders() {
   return {
@@ -65,32 +66,39 @@ export default {
 文字起こし:
 ${transcript}`;
 
-    let anthropicRes;
+    let geminiRes;
     try {
-      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 600,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
+      geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': env.GEMINI_API_KEY,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
     } catch (e) {
       return jsonResponse({ error: 'AI呼び出しに失敗しました: ' + e.message }, 502);
     }
 
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text().catch(() => '');
-      return jsonResponse({ error: 'AI APIエラー(' + anthropicRes.status + '): ' + errText }, 502);
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text().catch(() => '');
+      return jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + '): ' + errText }, 502);
     }
 
-    const data = await anthropicRes.json();
-    const rawText = (data.content && data.content[0] && data.content[0].text) || '';
+    const data = await geminiRes.json();
+    const rawText =
+      (data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text) ||
+      '';
     const parsed = extractJson(rawText);
     if (!parsed) {
       return jsonResponse({ error: '抽出結果の解析に失敗しました' }, 502);
