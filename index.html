@@ -114,7 +114,16 @@
   </div>
 
   <div class="card">
-    <div class="card-title">2. 商談メモ（手入力）</div>
+    <div class="card-title">2. 文字起こし・議事録を貼り付け</div>
+    <textarea id="transcript" style="height:140px;" placeholder="MiitelなどのAI要約・文字起こしをここに貼り付けてください"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="extractBtn">抽出する</button>
+      <span class="status pending" id="extractStatus"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">3. 商談メモ（抽出結果を確認・編集できます）</div>
     <div class="field" style="margin-bottom:10px;">
       <label>次回アクション</label>
       <textarea id="nextAction" placeholder="例: 来週水曜までに見積書を送付"></textarea>
@@ -134,7 +143,7 @@
   </div>
 
   <div class="card">
-    <div class="card-title">3. 先方へのフォローアップメール下書き（Gmail）</div>
+    <div class="card-title">4. 先方へのフォローアップメール下書き（Gmail）</div>
     <div class="card-note">初回操作時にGoogleログイン・権限の許可が求められます（gmotech.jpアカウントでログインしてください）。</div>
 
     <div class="field" style="margin-bottom:10px;">

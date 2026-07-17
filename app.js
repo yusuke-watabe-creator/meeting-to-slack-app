@@ -36,6 +36,47 @@ function initDefaults() {
   document.getElementById('mailCc').value = window.APP_CONSTANTS.REQUIRED_CC;
 }
 
+// ---- 文字起こし → AI抽出（Cloudflare Worker経由） ----
+function wireExtract() {
+  const extractBtn = document.getElementById('extractBtn');
+  const extractStatus = document.getElementById('extractStatus');
+
+  extractBtn.addEventListener('click', async () => {
+    const transcript = document.getElementById('transcript').value.trim();
+    if (!transcript) {
+      setStatus(extractStatus, '文字起こしを貼り付けてください', 'err');
+      return;
+    }
+    const extractApiUrl = window.APP_CONFIG.EXTRACT_API_URL;
+    if (!extractApiUrl || extractApiUrl.includes('REPLACE')) {
+      setStatus(extractStatus, 'EXTRACT_API_URL が未設定です（config.js を確認してください）', 'err');
+      return;
+    }
+
+    extractBtn.disabled = true;
+    setStatus(extractStatus, '抽出中...', 'pending');
+    try {
+      const res = await fetch(extractApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || ('抽出エラー(' + res.status + ')'));
+      }
+      document.getElementById('nextAction').value = result.next_action || '';
+      document.getElementById('prepItems').value = result.prep_items || '';
+      document.getElementById('dealFeedback').value = result.deal_feedback || '';
+      setStatus(extractStatus, '抽出しました。内容を確認してください', 'ok');
+    } catch (e) {
+      setStatus(extractStatus, 'エラー: ' + (e && e.message ? e.message : String(e)), 'err');
+    } finally {
+      extractBtn.disabled = false;
+    }
+  });
+}
+
 // ---- Slack送信 ----
 function wireSlackSend() {
   const sendBtn = document.getElementById('sendBtn');
@@ -182,6 +223,7 @@ window.addEventListener('DOMContentLoaded', () => {
   populateAssigneeSelect();
   initDefaults();
   initGmailAuth();
+  wireExtract();
   wireSlackSend();
   wireMailSearch();
   wireGmailDraft();
