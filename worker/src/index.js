@@ -3,7 +3,7 @@
 // Google AI Studio (https://aistudio.google.com/apikey) はクレジットカード登録不要の無料枠があるため採用。
 
 const ALLOWED_ORIGIN = 'https://yusuke-watabe-creator.github.io';
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-flash-latest';
 
 function corsHeaders() {
   return {
