@@ -67,27 +67,36 @@ export default {
 ${transcript}`;
 
     let geminiRes;
+    const callGemini = () =>
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      });
+
     try {
-      geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': env.GEMINI_API_KEY,
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
+      geminiRes = await callGemini();
+      // モデル混雑時の503は一時的なことが多いため、少し待って1回だけ再試行する。
+      if (geminiRes.status === 503) {
+        await new Promise((r) => setTimeout(r, 1500));
+        geminiRes = await callGemini();
+      }
     } catch (e) {
       return jsonResponse({ error: 'AI呼び出しに失敗しました: ' + e.message }, 502);
     }
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text().catch(() => '');
-      return jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + '): ' + errText }, 502);
+      const hint =
+        geminiRes.status === 503
+          ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）'
+          : '';
+      return jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + ')' + hint + ': ' + errText }, 502);
     }
 
     const data = await geminiRes.json();
