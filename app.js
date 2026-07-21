@@ -222,7 +222,6 @@ function wireGmailDraft() {
 window.addEventListener('DOMContentLoaded', () => {
   populateAssigneeSelect();
   initDefaults();
-  initGmailAuth();
   wireExtract();
   wireSlackSend();
   wireMailSearch();

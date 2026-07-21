@@ -4,12 +4,18 @@
 let gisTokenClient = null;
 let gmailAccessToken = null;
 
-function initGmailAuth() {
-  gisTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: window.APP_CONFIG.GOOGLE_CLIENT_ID,
-    scope: window.APP_CONSTANTS.GMAIL_SCOPES,
-    callback: () => {} // requestAccessTokenのたびに差し替える
-  });
+// GISスクリプトは<script async defer>で読み込んでいるため、ページ読み込み直後は
+// google.accounts がまだ存在しない場合がある（読み込み完了タイミングに依存する競合状態）。
+// そのため、ページ読み込み時に即座に初期化はせず、実際にGmail機能を使う瞬間まで遅延させる。
+function getGisTokenClient() {
+  if (!gisTokenClient) {
+    gisTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: window.APP_CONFIG.GOOGLE_CLIENT_ID,
+      scope: window.APP_CONSTANTS.GMAIL_SCOPES,
+      callback: () => {} // requestAccessTokenのたびに差し替える
+    });
+  }
+  return gisTokenClient;
 }
 
 // ユーザー操作(クリック)起点のハンドラ内から呼ぶこと(GISの制約)。
@@ -19,7 +25,8 @@ function ensureGmailToken() {
       resolve(gmailAccessToken);
       return;
     }
-    gisTokenClient.callback = (resp) => {
+    const client = getGisTokenClient();
+    client.callback = (resp) => {
       if (resp.error) {
         reject(new Error('Google認証エラー: ' + resp.error));
         return;
@@ -27,7 +34,7 @@ function ensureGmailToken() {
       gmailAccessToken = resp.access_token;
       resolve(gmailAccessToken);
     };
-    gisTokenClient.requestAccessToken({ prompt: '' });
+    client.requestAccessToken({ prompt: '' });
   });
 }
 
