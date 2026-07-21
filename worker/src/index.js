@@ -4,6 +4,7 @@
 
 const ALLOWED_ORIGIN = 'https://yusuke-watabe-creator.github.io';
 const MODEL = 'gemini-flash-latest';
+const FALLBACK_MODEL = 'gemini-flash-lite-latest';
 
 function corsHeaders() {
   return {
@@ -66,9 +67,8 @@ export default {
 文字起こし:
 ${transcript}`;
 
-    let geminiRes;
-    const callGemini = () =>
-      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+    const callGemini = (model) =>
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,12 +79,24 @@ ${transcript}`;
         }),
       });
 
+    const isCongested = (res) => res.status === 503 || res.status === 429;
+
+    // 混雑時(503/429)は一時的なことが多いため、間隔を空けながら複数回試す。
+    // 同じモデルで数回試してもダメなら、より軽量なモデル(flash-lite)にも切り替えてみる。
+    const attempts = [
+      { model: MODEL, delayMs: 0 },
+      { model: MODEL, delayMs: 1500 },
+      { model: MODEL, delayMs: 3000 },
+      { model: FALLBACK_MODEL, delayMs: 1000 },
+      { model: FALLBACK_MODEL, delayMs: 3000 },
+    ];
+
+    let geminiRes;
     try {
-      geminiRes = await callGemini();
-      // モデル混雑時の503は一時的なことが多いため、少し待って1回だけ再試行する。
-      if (geminiRes.status === 503) {
-        await new Promise((r) => setTimeout(r, 1500));
-        geminiRes = await callGemini();
+      for (const attempt of attempts) {
+        if (attempt.delayMs) await new Promise((r) => setTimeout(r, attempt.delayMs));
+        geminiRes = await callGemini(attempt.model);
+        if (!isCongested(geminiRes)) break;
       }
     } catch (e) {
       return jsonResponse({ error: 'AI呼び出しに失敗しました: ' + e.message }, 502);
@@ -92,10 +104,9 @@ ${transcript}`;
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text().catch(() => '');
-      const hint =
-        geminiRes.status === 503
-          ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）'
-          : '';
+      const hint = isCongested(geminiRes)
+        ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）'
+        : '';
       return jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + ')' + hint + ': ' + errText }, 502);
     }
 
