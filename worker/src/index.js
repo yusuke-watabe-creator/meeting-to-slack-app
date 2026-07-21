@@ -54,8 +54,8 @@ export default {
     if (!transcript) {
       return jsonResponse({ error: '文字起こしが空です' }, 400);
     }
-    if (transcript.length > 20000) {
-      return jsonResponse({ error: '文字起こしが長すぎます（2万文字以内にしてください）' }, 400);
+    if (transcript.length > 100000) {
+      return jsonResponse({ error: '文字起こしが長すぎます（10万文字以内にしてください）' }, 400);
     }
 
     const prompt = `以下は営業商談の文字起こし、またはAI議事録です。この内容だけから、次の3項目を日本語・簡潔な箇条書きで抽出してください。
