@@ -3,22 +3,38 @@
 // mode:'no-cors' で送信する（レスポンス本文は読めないopaque応答になる = 成否は確認できない）。
 // Content-Type を 'text/plain' にして「シンプルリクエスト」扱いにすることで、
 // Slack 側が応答しない preflight(OPTIONS) を回避している。
-function buildSlackMessage({ assigneeId, dealName, dealDate, nextAction, prepItems, dealFeedback }) {
-  const lines = [];
-  if (assigneeId) lines.push('<@' + assigneeId + '>');
-
+function buildDealMemoBody({ dealName, dealDate, nextAction, prepItems, dealFeedback }) {
   let header = '*📋 商談メモ*';
   const meta = [];
   if (dealName) meta.push(dealName);
   if (dealDate) meta.push(dealDate);
   if (meta.length) header += ' - ' + meta.join(' / ');
 
-  lines.push(
+  return [
     header, '',
     '*次回アクション*', nextAction || '特になし', '',
     '*準備するもの*', prepItems || '特になし', '',
     '*案件フィードバック*', dealFeedback || '特になし'
-  );
+  ].join('\n');
+}
+
+// Slack Incoming Webhook投稿用。<@USERID>形式はSlack側で実際のメンションに展開される。
+function buildSlackMessage(fields) {
+  const lines = [];
+  if (fields.assigneeId) lines.push('<@' + fields.assigneeId + '>');
+  lines.push(buildDealMemoBody(fields));
+  return lines.join('\n');
+}
+
+// クリップボードコピー用。手動貼り付けでは<@USERID>形式が実際のメンションに変換されないため、
+// 「@名前」という読める形式のテキストにする。
+function buildCopyMessage(fields) {
+  const lines = [];
+  if (fields.assigneeId) {
+    const assignee = window.APP_CONSTANTS.ASSIGNEES.find(a => a.id === fields.assigneeId);
+    if (assignee && assignee.mention) lines.push(assignee.mention);
+  }
+  lines.push(buildDealMemoBody(fields));
   return lines.join('\n');
 }
 

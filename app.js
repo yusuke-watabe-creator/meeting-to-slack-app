@@ -146,7 +146,7 @@ function wireCopyButton() {
       return;
     }
 
-    const message = buildSlackMessage(fields);
+    const message = buildCopyMessage(fields);
     try {
       await copyToClipboard(message);
       setStatus(sendStatus, 'コピーしました。好きなチャンネル・DMに貼り付けてください', 'ok');
