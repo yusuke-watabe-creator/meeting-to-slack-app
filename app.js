@@ -10,6 +10,25 @@ function parseEmailList(str) {
     .filter(Boolean);
 }
 
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch (e) {
+    // フォーカスが無い等でClipboard APIが使えない環境向けのフォールバック
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!ok) throw e;
+  }
+}
+
 function fmtDate(headerDate) {
   if (!headerDate) return '';
   const d = new Date(headerDate);
@@ -77,25 +96,30 @@ function wireExtract() {
   });
 }
 
+function readDealMemoFields() {
+  return {
+    dealDate: document.getElementById('dealDate').value,
+    dealName: document.getElementById('dealName').value.trim(),
+    assigneeId: document.getElementById('assignee').value,
+    nextAction: document.getElementById('nextAction').value.trim(),
+    prepItems: document.getElementById('prepItems').value.trim(),
+    dealFeedback: document.getElementById('dealFeedback').value.trim()
+  };
+}
+
 // ---- Slack送信 ----
 function wireSlackSend() {
   const sendBtn = document.getElementById('sendBtn');
   const sendStatus = document.getElementById('sendStatus');
 
   sendBtn.addEventListener('click', async () => {
-    const dealDate = document.getElementById('dealDate').value;
-    const dealName = document.getElementById('dealName').value.trim();
-    const assigneeId = document.getElementById('assignee').value;
-    const nextAction = document.getElementById('nextAction').value.trim();
-    const prepItems = document.getElementById('prepItems').value.trim();
-    const dealFeedback = document.getElementById('dealFeedback').value.trim();
-
-    if (!nextAction && !prepItems && !dealFeedback) {
+    const fields = readDealMemoFields();
+    if (!fields.nextAction && !fields.prepItems && !fields.dealFeedback) {
       setStatus(sendStatus, '送信する内容がありません', 'err');
       return;
     }
 
-    const message = buildSlackMessage({ assigneeId, dealName, dealDate, nextAction, prepItems, dealFeedback });
+    const message = buildSlackMessage(fields);
 
     sendBtn.disabled = true;
     setStatus(sendStatus, '送信中...', 'pending');
@@ -106,6 +130,28 @@ function wireSlackSend() {
       setStatus(sendStatus, '送信エラー: ' + (e && e.message ? e.message : String(e)), 'err');
     } finally {
       sendBtn.disabled = false;
+    }
+  });
+}
+
+// ---- コピー（他のチャンネル・DMに手動で貼る用） ----
+function wireCopyButton() {
+  const copyBtn = document.getElementById('copyBtn');
+  const sendStatus = document.getElementById('sendStatus');
+
+  copyBtn.addEventListener('click', async () => {
+    const fields = readDealMemoFields();
+    if (!fields.nextAction && !fields.prepItems && !fields.dealFeedback) {
+      setStatus(sendStatus, 'コピーする内容がありません', 'err');
+      return;
+    }
+
+    const message = buildSlackMessage(fields);
+    try {
+      await copyToClipboard(message);
+      setStatus(sendStatus, 'コピーしました。好きなチャンネル・DMに貼り付けてください', 'ok');
+    } catch (e) {
+      setStatus(sendStatus, 'コピーに失敗しました: ' + (e && e.message ? e.message : String(e)), 'err');
     }
   });
 }
@@ -224,6 +270,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDefaults();
   wireExtract();
   wireSlackSend();
+  wireCopyButton();
   wireMailSearch();
   wireGmailDraft();
 });

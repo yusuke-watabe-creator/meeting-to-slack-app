@@ -55,6 +55,8 @@
   .btn-slack:disabled { background: #b79ab8; cursor: not-allowed; }
   .btn-gmail { background: #c2410c; }
   .btn-gmail:disabled { background: #e0a480; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+  .btn-secondary:disabled { color: #9ca3af; cursor: not-allowed; }
   .btn-row { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
   .status { font-size: 12px; margin-top: 8px; min-height: 16px; }
   .status.ok { color: #15803d; }
@@ -138,6 +140,7 @@
     </div>
     <div class="btn-row">
       <button class="btn btn-slack" id="sendBtn">Slackに送信</button>
+      <button class="btn btn-secondary" id="copyBtn">コピー（他のチャンネルに貼る用）</button>
       <span class="status pending" id="sendStatus"></span>
     </div>
   </div>
