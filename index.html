@@ -92,7 +92,10 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="title">商談メモ → Slack / Gmail 連携ツール</div>
+  <div class="row" style="justify-content:space-between;align-items:center;">
+    <div class="title">商談メモ → Slack / Gmail 連携ツール</div>
+    <a href="tasks.html" style="font-size:13px;color:#2563eb;text-decoration:none;white-space:nowrap;">タスク管理 →</a>
+  </div>
   <div class="subtitle">商談内容を入力 → #渡部チーム--26年 へSlack投稿 / 先方へのフォローアップメール下書きをGmailに作成</div>
 
   <div class="card">
@@ -137,6 +140,10 @@
     <div class="field" style="margin-bottom:10px;">
       <label>案件フィードバック</label>
       <textarea id="dealFeedback" placeholder="例: 予算感は合っている。決裁者との日程調整がボトルネック"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="addToTaskBoard" checked style="width:auto;">
+      <label for="addToTaskBoard" style="margin:0;font-weight:400;font-size:12px;color:#4b5563;">タスク管理ボードにも追加する（担当者の列にカードを1件作成）</label>
     </div>
     <div class="btn-row">
       <button class="btn btn-slack" id="sendBtn">Slackに送信</button>
@@ -194,6 +201,7 @@
 <script src="config.js"></script>
 <script src="constants.js"></script>
 <script src="slack.js"></script>
+<script src="firebase-tasks.js"></script>
 <script src="gmail.js"></script>
 <script src="app.js"></script>
 </body>

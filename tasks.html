@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>渡部T タスク管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const cfg = {
+  apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
+  authDomain: "taiki-tasks-933cc.firebaseapp.com",
+  databaseURL: "https://taiki-tasks-933cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taiki-tasks-933cc",
+  storageBucket: "taiki-tasks-933cc.firebasestorage.app",
+  messagingSenderId: "679381676234",
+  appId: "1:679381676234:web:20b54086cd302494c0c433"
+};
+const app = initializeApp(cfg);
+const db = getDatabase(app);
+window._fb = { db, ref, set, remove, onValue };
+window._fbReady = true;
+window.dispatchEvent(new Event("fb-ready"));
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0EFE9;--surface:#FFF;--surface2:#EFEDE6;
+  --border:#E2DFD6;--border2:#C9C6BC;
+  --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
+  --accent:#3A5EE5;--accent-bg:#EDF0FC;
+  --green:#1A7A50;--green-bg:#E8F5EE;
+  --amber:#A05C00;--amber-bg:#FEF4E3;
+  --red:#C0253A;--red-bg:#FDEAED;
+  --purple:#6B35C8;
+  --r8:8px;--r12:12px;--r16:16px;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
+  --font:"Instrument Sans",sans-serif;--mono:monospace;
+  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ct:#6B35C8;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.brand-name{font-size:15px;font-weight:600}
+.topbar-right{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .14s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{background:none;color:var(--red);border:1px solid #f5c6cc}.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn svg{width:13px;height:13px}
+.stats-bar{padding:10px 20px;display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.stat{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text2)}
+.dot{width:8px;height:8px;border-radius:50%}
+.num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)}
+.sep{width:1px;height:16px;background:var(--border)}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px 20px;align-items:start}
+.col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
+.col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
+.col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#EDF0FC,#f5f7ff)}
+.col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
+.col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
+.col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+.col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:600}
+.col-n .col-cnt{background:#c7d7ff;color:var(--cn)}
+.col-m .col-cnt{background:#a7f3d0;color:var(--cm)}
+.col-s .col-cnt{background:#fecdd3;color:var(--cs)}
+.sort-bar{display:flex;gap:4px;padding:6px 10px 2px}
+.sort-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s}
+.sort-btn:hover{border-color:var(--border2);color:var(--text2)}
+.sort-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px}
+.empty{padding:24px 10px;text-align:center;color:var(--text3);font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;transition:box-shadow .14s,transform .14s;cursor:pointer;position:relative}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.card.done{opacity:0;transform:translateX(16px);transition:all .32s;pointer-events:none}
+.pri-bar{height:3px}
+.ph{background:var(--red)}.pm{background:var(--amber)}.pl{background:var(--green)}.pn{background:var(--border)}
+.card-inner{padding:10px 12px}
+.card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+.check{width:17px;height:17px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;background:none;cursor:pointer;transition:all .14s}
+.check:hover{border-color:var(--green);background:var(--green-bg)}
+.check.on{background:var(--green);border-color:var(--green)}
+.ck{width:9px;height:9px;stroke:#fff;stroke-width:2.5;fill:none;display:none}
+.check.on .ck{display:block}
+.card-name{font-size:13px;font-weight:500;flex:1;line-height:1.4}
+.card-memo{font-size:11.5px;color:var(--text2);margin-bottom:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:500}
+.tph{background:var(--red-bg);color:var(--red)}.tpm{background:var(--amber-bg);color:var(--amber)}.tpl{background:var(--green-bg);color:var(--green)}
+.tdue{background:var(--surface2);color:var(--text2)}.tdue.over{background:var(--red-bg);color:var(--red)}.tdue.today{background:var(--amber-bg);color:var(--amber)}
+.card-acts{position:absolute;top:7px;right:7px;display:flex;gap:3px;opacity:0;transition:opacity .13s}
+.card:hover .card-acts{opacity:1}
+.ib{width:24px;height:24px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
+.ib:hover{background:var(--border);color:var(--text2)}
+.ib.del:hover{background:var(--red-bg);color:var(--red)}
+.ib svg{width:12px;height:12px}
+.trash-view{padding:16px 20px}
+.ti{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);padding:11px 14px;display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.ti-name{flex:1;font-size:13px;color:var(--text2);text-decoration:line-through;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(2px)}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--r16);box-shadow:var(--shadow-lg);width:460px;max-width:95vw;padding:22px;transform:translateY(8px) scale(.98);transition:transform .18s;max-height:92vh;overflow-y:auto}
+.overlay.open .modal{transform:none}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:18px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.form-row{margin-bottom:13px}
+.lbl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.inp{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);outline:none;transition:border-color .14s}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--text3)}
+textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.sel-w{position:relative}
+.sel-w select{width:100%;padding:9px 28px 9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);appearance:none;cursor:pointer;outline:none;transition:border-color .14s}
+.sel-w select:focus{border-color:var(--accent)}
+.sel-w::after{content:"";position:absolute;right:10px;top:50%;transform:translateY(-50%);border:4px solid transparent;border-top-color:var(--text3);pointer-events:none}
+.dm{width:500px}
+.dh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.dn{font-size:17px;font-weight:600;line-height:1.4;flex:1}
+.dc{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.dsec{border-top:1px solid var(--border);padding:14px 0}
+.dlbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:7px}
+.dmemo{font-size:14px;line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:var(--r8);padding:11px 13px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.di{background:var(--surface2);border-radius:var(--r8);padding:9px 11px}
+.dilbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}
+.dival{font-size:13px;font-weight:500}
+.ss{border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;margin-bottom:14px}
+.st{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.sr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);gap:12px}
+.sr:last-child{border-bottom:none}
+.srlbl{font-size:13px;font-weight:500}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.sw{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .14s}
+.sw:hover{transform:scale(1.18)}
+.sw.sel{border-color:var(--text)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{animation:si .15s ease both}
+/* Login */
+.login-overlay{position:fixed;inset:0;background:#F0EFE9;z-index:9998;display:flex;align-items:center;justify-content:center}
+.login-overlay.hidden{display:none}
+.lcard{background:var(--surface);border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.13),0 2px 8px rgba(0,0,0,.06);width:420px;max-width:94vw;padding:32px 28px}
+.lbrand{text-align:center;margin-bottom:26px}
+.lbrand-icon{width:46px;height:46px;background:var(--accent);border-radius:13px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:22px;margin-bottom:10px}
+.lbrand-name{font-size:19px;font-weight:700}
+.lbrand-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.ubtn{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r12);padding:14px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .14s;font-family:var(--font);text-align:left;width:100%}
+.ubtn:hover{border-color:var(--accent);background:var(--accent-bg);transform:translateY(-2px);box-shadow:var(--shadow)}
+.ubtn .uav{width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ubtn-name{font-size:13.5px;font-weight:600}
+.ubtn-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.suc{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r12);padding:12px 14px;display:flex;align-items:center;gap:11px;margin-bottom:20px}
+.suc .uav{width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.back-lnk{font-size:12.5px;color:var(--text3);cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:3px;transition:color .12s}
+.back-lnk:hover{color:var(--accent)}
+.ltitle{font-size:15px;font-weight:600;margin-bottom:14px}
+.full-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--r8);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .14s;margin-top:8px}
+.full-btn:hover{filter:brightness(1.1)}
+.lerr{font-size:12px;color:var(--red);background:var(--red-bg);padding:8px 11px;border-radius:var(--r8);margin-bottom:10px;display:none}
+.lwarn{font-size:12px;color:var(--amber);background:var(--amber-bg);padding:8px 11px;border-radius:var(--r8);margin-bottom:12px}
+.lfirst-info{font-size:12.5px;color:var(--text2);background:var(--accent-bg);padding:9px 12px;border-radius:var(--r8);margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-overlay hidden" id="login-overlay">
+  <div id="ls-step1">
+    <div class="lcard">
+      <div class="lbrand">
+        <div class="lbrand-icon">&#10022;</div>
+        <div class="lbrand-name">渡部T Tasks</div>
+        <div class="lbrand-sub">チームタスク管理</div>
+      </div>
+      <div class="ugrid">
+        <button class="ubtn" onclick="lsSelectUser('渡部')"><div class="uav" style="background:var(--cn)">渡</div><div><div class="ubtn-name">渡部さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('横井')"><div class="uav" style="background:var(--cm)">横</div><div><div class="ubtn-name">横井さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('上浦')"><div class="uav" style="background:var(--cs)">上</div><div><div class="ubtn-name">上浦さん</div><div class="ubtn-sub">ログイン</div></div></button>
+        <button class="ubtn" onclick="lsSelectUser('太田')"><div class="uav" style="background:var(--ct)">太</div><div><div class="ubtn-name">太田さん</div><div class="ubtn-sub">ログイン</div></div></button>
+      </div>
+    </div>
+  </div>
+  <div id="ls-step2" style="display:none">
+    <div class="lcard">
+      <div class="lbrand">
+        <div class="lbrand-icon">&#10022;</div>
+        <div class="lbrand-name">渡部T Tasks</div>
+        <div class="lbrand-sub">チームタスク管理</div>
+      </div>
+      <div class="back-lnk" onclick="lsBack()">← 別のユーザー</div>
+      <div class="suc" id="ls-suc"></div>
+      <div id="ls-err" class="lerr"></div>
+      <div id="ls-form-login" style="display:none">
+        <div class="ltitle">ログイン</div>
+        <div id="ls-swarn" class="lwarn" style="display:none">⚠️ セッションの有効期限が切れました。再度ログインしてください</div>
+        <div class="form-row"><label class="lbl">ログインID</label><input type="text" class="inp" id="ls-lid" placeholder="ログインIDを入力" autocomplete="username"></div>
+        <div class="form-row"><label class="lbl">パスワード</label><input type="password" class="inp" id="ls-lpass" placeholder="パスワードを入力" autocomplete="current-password"></div>
+        <button class="full-btn" onclick="lsSubmitLogin()">ログイン</button>
+      </div>
+      <div id="ls-form-setup" style="display:none">
+        <div class="ltitle">初回設定</div>
+        <div class="lfirst-info">初めてのログインです。ログインIDとパスワードを設定してください。</div>
+        <div class="form-row"><label class="lbl">ログインID</label><input type="text" class="inp" id="ls-sid" placeholder="メールアドレスや任意のID" autocomplete="username"></div>
+        <div class="form-row"><label class="lbl">パスワード</label><input type="password" class="inp" id="ls-spass" placeholder="4文字以上" autocomplete="new-password"></div>
+        <div class="form-row" style="margin-bottom:0"><label class="lbl">パスワード（確認）</label><input type="password" class="inp" id="ls-spass2" placeholder="もう一度入力" autocomplete="new-password"></div>
+        <button class="full-btn" onclick="lsSubmitSetup()">設定して開始</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">&#10022;</div>
+    <div class="brand-name">渡部T タスク管理</div>
+  </div>
+  <div class="topbar-right">
+    <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">← 商談メモ</a>
+    <button class="btn btn-ghost btn-sm" onclick="toggleTrash()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg>
+      ゴミ箱 <span id="tbtn" style="font-family:monospace;font-size:11px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:20px;margin-left:2px">0</span>
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openSettings()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+      設定
+    </button>
+    <button class="btn btn-primary" onclick="openAdd()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+      タスクを追加
+    </button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="st0">0</span> 件</div>
+  <div class="sep"></div>
+  <div class="stat"><span class="dot" style="background:var(--cn)"></span>渡部 <span class="num" id="st1">0</span></div>
+  <div class="stat"><span class="dot" style="background:var(--cm)"></span>横井 <span class="num" id="st2">0</span></div>
+  <div class="stat"><span class="dot" style="background:var(--cs)"></span>上浦 <span class="num" id="st3">0</span></div>
+  <div class="stat"><span class="dot" style="background:var(--ct)"></span>太田 <span class="num" id="st6">0</span></div>
+  <div class="sep"></div>
+  <div class="stat"><span class="dot" style="background:var(--red)"></span>高優先度 <span class="num" id="st4">0</span></div>
+  <div class="stat"><span class="dot" style="background:var(--amber)"></span>今日期限 <span class="num" id="st5">0</span></div>
+</div>
+
+<div id="main">
+  <div class="kanban" id="kanban">
+    <div class="col col-n">
+      <div class="col-header">
+        <div class="col-title"><div class="avatar" style="background:var(--cn)">渡</div>渡部</div>
+        <span class="col-cnt" id="cn0">0</span>
+      </div>
+      <div class="sort-bar">
+        <button class="sort-btn active" onclick="setSort('n','created',this)">追加順</button>
+        <button class="sort-btn" onclick="setSort('n','priority',this)">優先度順</button>
+        <button class="sort-btn" onclick="setSort('n','due',this)">期限順</button>
+      </div>
+      <div class="col-body" id="cn"></div>
+    </div>
+    <div class="col col-m">
+      <div class="col-header">
+        <div class="col-title"><div class="avatar" style="background:var(--cm)">横</div>横井</div>
+        <span class="col-cnt" id="cm0">0</span>
+      </div>
+      <div class="sort-bar">
+        <button class="sort-btn active" onclick="setSort('m','created',this)">追加順</button>
+        <button class="sort-btn" onclick="setSort('m','priority',this)">優先度順</button>
+        <button class="sort-btn" onclick="setSort('m','due',this)">期限順</button>
+      </div>
+      <div class="col-body" id="cm"></div>
+    </div>
+    <div class="col col-s">
+      <div class="col-header">
+        <div class="col-title"><div class="avatar" style="background:var(--cs)">上</div>上浦</div>
+        <span class="col-cnt" id="cs0">0</span>
+      </div>
+      <div class="sort-bar">
+        <button class="sort-btn active" onclick="setSort('s','created',this)">追加順</button>
+        <button class="sort-btn" onclick="setSort('s','priority',this)">優先度順</button>
+        <button class="sort-btn" onclick="setSort('s','due',this)">期限順</button>
+      </div>
+      <div class="col-body" id="cs"></div>
+    </div>
+    <div class="col" style="border:1px solid var(--border);background:var(--surface2);border-radius:var(--r16);overflow:hidden">
+      <div class="col-header" style="border-bottom:3px solid var(--ct);background:linear-gradient(135deg,#F0EAFB,#f8f5ff)">
+        <div class="col-title"><div class="avatar" style="background:var(--ct)">太</div>太田</div>
+        <span class="col-cnt" id="ct0" style="background:#e9d5ff;color:var(--ct)">0</span>
+      </div>
+      <div class="sort-bar">
+        <button class="sort-btn active" onclick="setSort('t','created',this)">追加順</button>
+        <button class="sort-btn" onclick="setSort('t','priority',this)">優先度順</button>
+        <button class="sort-btn" onclick="setSort('t','due',this)">期限順</button>
+      </div>
+      <div class="col-body" id="ct"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="overlay" id="task-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="mtitle">タスクを追加</div>
+    <input type="hidden" id="eid">
+    <div class="form-row"><label class="lbl">タスク名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇"></div>
+    <div class="form-row"><label class="lbl">メモ（任意）</label><textarea class="inp" id="fm" rows="2" placeholder="詳細・備考など"></textarea></div>
+    <div class="f2">
+      <div class="form-row" style="margin:0"><label class="lbl">カテゴリ</label><div class="sel-w"><select id="fc"><option value="">なし</option></select></div></div>
+      <div class="form-row" style="margin:0"><label class="lbl">優先度</label><div class="sel-w"><select id="fp"><option value="">なし</option><option value="high">🔴 高</option><option value="mid">🟡 中</option><option value="low">🟢 低</option></select></div></div>
+    </div>
+    <div class="f2" style="margin-top:13px">
+      <div class="form-row" style="margin:0"><label class="lbl">担当者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="渡部">渡部</option><option value="横井">横井</option><option value="上浦">上浦</option><option value="太田">太田</option></select></div></div>
+      <div class="form-row" style="margin:0"><label class="lbl">期限日</label><input type="date" class="inp" id="fd"></div>
+    </div>
+    <div class="form-row" style="margin-top:13px"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal dm">
+    <div class="dh">
+      <div class="dn" id="d-name"></div>
+      <button class="dc" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="tags" id="d-tags" style="margin-bottom:16px"></div>
+    <div class="dsec" id="d-memo-sec">
+      <div class="dlbl">メモ・詳細</div>
+      <div class="dmemo" id="d-memo"></div>
+    </div>
+    <div class="dsec">
+      <div class="dlbl">タスク情報</div>
+      <div class="dgrid">
+        <div class="di"><div class="dilbl">担当者</div><div class="dival" id="d-a">—</div></div>
+        <div class="di"><div class="dilbl">優先度</div><div class="dival" id="d-p">—</div></div>
+        <div class="di"><div class="dilbl">期限日</div><div class="dival" id="d-d">—</div></div>
+        <div class="di"><div class="dilbl">カテゴリ</div><div class="dival" id="d-c">—</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDetail()">閉じる</button>
+      <button class="btn btn-primary" id="d-edit">編集する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">設定</div>
+    <div class="ss">
+      <div class="st">カラーテーマ</div>
+      <div class="sr"><div class="srlbl">アクセントカラー</div><div class="swatches" id="swatches"></div></div>
+    </div>
+    <div class="ss">
+      <div class="st">カテゴリ管理</div>
+      <div id="catlist"></div>
+      <div style="padding:10px 14px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:7px">
+          <input type="text" class="inp" id="cnm" placeholder="新しいカテゴリ名" style="flex:1;padding:7px 10px;font-size:13px">
+          <div class="sel-w" style="width:68px"><select id="ccol" style="padding:7px 26px 7px 9px;font-size:13px"><option value="#3A5EE5">🔵</option><option value="#1A7A50">🟢</option><option value="#A05C00">🟡</option><option value="#C0253A">🔴</option><option value="#6B35C8">🟣</option></select></div>
+          <button class="btn btn-primary btn-sm" onclick="addCat()">追加</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSettings()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存して適用</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Loading
+document.body.insertAdjacentHTML("beforeend","<div id=loading style='position:fixed;inset:0;background:#F0EFE9;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px'><div style='width:32px;height:32px;border:3px solid #E2DFD6;border-top-color:#3A5EE5;border-radius:50%;animation:spin .8s linear infinite'></div><div style='font-size:13px;color:#5C5A62'>接続中...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>");
+
+const ACCENTS=["#3A5EE5","#1A7A50","#6B35C8","#C0253A","#A05C00","#0E7490","#BE185D","#374151"];
+
+let tasks=[],trash=[],cats=[
+  {id:"doc",name:"資料作成",color:"#3A5EE5"},
+  {id:"est",name:"見積書作成",color:"#1A7A50"},
+  {id:"sf",name:"SF申請",color:"#0E7490"},
+  {id:"credit",name:"与信WF申請",color:"#A05C00"},
+  {id:"irreg",name:"イレギュラーWF申請",color:"#C0253A"},
+  {id:"demo",name:"デモ画面発行",color:"#6B35C8"},
+  {id:"sched",name:"日程調整",color:"#BE185D"},
+];
+let appCfg={accent:"#3A5EE5"};
+let showTrash=false;
+let colSort={n:"created",m:"created",s:"created",t:"created"};
+let _db,_ref,_set,_remove,_onValue;
+
+function fbSet(p,v){if(_db)_set(_ref(_db,p),v);}
+function fbDel(p){if(_db)_remove(_ref(_db,p));}
+function saveTask(t){fbSet("team2/tasks/"+t.id,t);}
+function delTask(id){fbDel("team2/tasks/"+id);}
+function saveTrash(t){fbSet("team2/trash/"+t.id,t);}
+function delTrash(id){fbDel("team2/trash/"+id);}
+
+function today(){return new Date().toISOString().split("T")[0]}
+function fmtDue(s,time){
+  if(!s)return null;
+  const d=new Date(s+"T00:00:00"),t=new Date();t.setHours(0,0,0,0);
+  const diff=Math.round((d-t)/86400000);
+  let label=diff<0?Math.abs(diff)+"日超過":diff===0?"今日":diff===1?"明日":d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
+  if(time)label+=" "+time;
+  return{label,cls:diff<0?"over":diff===0?"today":""};
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+function refresh(){updateStats();showTrash?renderTrash():renderKanban();}
+
+function updateStats(){
+  document.getElementById("st0").textContent=tasks.length;
+  document.getElementById("st1").textContent=tasks.filter(t=>t.assignee==="渡部").length;
+  document.getElementById("st2").textContent=tasks.filter(t=>t.assignee==="横井").length;
+  document.getElementById("st3").textContent=tasks.filter(t=>t.assignee==="上浦").length;
+  const st6=document.getElementById("st6");if(st6)st6.textContent=tasks.filter(t=>t.assignee==="太田").length;
+  document.getElementById("st4").textContent=tasks.filter(t=>t.priority==="high").length;
+  document.getElementById("st5").textContent=tasks.filter(t=>t.due&&t.due<=today()).length;
+  document.getElementById("tbtn").textContent=trash.length;
+}
+
+const _colMap={n:{id:"cn",name:"渡部",cnt:"cn0"},m:{id:"cm",name:"横井",cnt:"cm0"},s:{id:"cs",name:"上浦",cnt:"cs0"},t:{id:"ct",name:"太田",cnt:"ct0"}};
+function renderCol(colKey){
+  const col=_colMap[colKey];
+  const el=document.getElementById(col.id);
+  const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[colKey]);
+  document.getElementById(col.cnt).textContent=list.length;
+  if(!list.length){el.innerHTML='<div class="empty">タスクなし</div>';return;}
+  el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
+}
+function setSort(col,sort,btn){
+  colSort[col]=sort;
+  btn.closest(".sort-bar").querySelectorAll(".sort-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderCol(col);
+}
+
+const PO={high:0,mid:1,low:2,"":3};
+function sortTasks(list,sort){
+  if(sort==="priority")return [...list].sort((a,b)=>(PO[a.priority]||3)-(PO[b.priority]||3));
+  if(sort==="due")return [...list].sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due.localeCompare(b.due);});
+  return [...list].sort((a,b)=>b.createdAt-a.createdAt);
+}
+
+function renderKanban(){
+  document.getElementById("kanban").style.display="grid";
+  const tv=document.getElementById("trash-container");if(tv)tv.remove();
+  const cols=[{id:"cn",name:"渡部",cnt:"cn0",sort:"n"},{id:"cm",name:"横井",cnt:"cm0",sort:"m"},{id:"cs",name:"上浦",cnt:"cs0",sort:"s"},{id:"ct",name:"太田",cnt:"ct0",sort:"t"}];
+  cols.forEach(col=>{
+    const el=document.getElementById(col.id);
+    const list=sortTasks(tasks.filter(t=>t.assignee===col.name),colSort[col.sort]);
+    document.getElementById(col.cnt).textContent=list.length;
+    if(!list.length){el.innerHTML='<div class="empty">タスクなし</div>';return;}
+    el.innerHTML=list.map((t,i)=>cardHTML(t,i)).join("");
+  });
+}
+
+function cardHTML(t,i){
+  const cat=cats.find(c=>c.id===t.cat);
+  const due=t.due?fmtDue(t.due,t.dueTime):null;
+  const pb={high:"ph",mid:"pm",low:"pl","":"pn"};
+  const pt={high:"tph",mid:"tpm",low:"tpl"};
+  const ptl={high:"高優先度",mid:"中優先度",low:"低優先度"};
+  return `<div class="card" id="tc${t.id}" style="animation-delay:${i*15}ms" onclick="openDetail(${t.id})">
+    <div class="pri-bar ${pb[t.priority]||"pn"}"></div>
+    <div class="card-inner">
+      <div class="card-top">
+        <div class="check" id="ck${t.id}" onclick="event.stopPropagation();complete(${t.id})">
+          <svg class="ck" viewBox="0 0 12 12"><polyline points="1.5 6 4.5 9 10.5 3"/></svg>
+        </div>
+        <div class="card-name">${esc(t.name)}</div>
+      </div>
+      ${t.memo?`<div class="card-memo">${esc(t.memo)}</div>`:""}
+      <div class="tags">
+        ${cat?`<span class="tag" style="background:${cat.color}18;color:${cat.color}">${esc(cat.name)}</span>`:""}
+        ${t.priority?`<span class="tag ${pt[t.priority]}">${ptl[t.priority]}</span>`:""}
+        ${due?`<span class="tag tdue ${due.cls}">📅 ${due.label}</span>`:""}
+      </div>
+    </div>
+    <div class="card-acts">
+      <button class="ib" onclick="event.stopPropagation();openEdit(${t.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z"/></svg></button>
+      <button class="ib del" onclick="event.stopPropagation();toTrash(${t.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function renderTrash(){
+  document.getElementById("kanban").style.display="none";
+  let tc=document.getElementById("trash-container");
+  if(!tc){tc=document.createElement("div");tc.id="trash-container";tc.className="trash-view";document.getElementById("main").appendChild(tc);}
+  if(!trash.length){tc.innerHTML='<div style="font-size:15px;font-weight:600;margin-bottom:12px">🗑️ ゴミ箱</div><div style="text-align:center;padding:48px;color:var(--text3)">ゴミ箱は空です</div>';return;}
+  tc.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><span style="font-size:15px;font-weight:600">🗑️ ゴミ箱（${trash.length}件）</span><button class="btn btn-danger btn-sm" onclick="emptyTrash()">すべて完全削除</button></div>`+
+    trash.map(t=>{
+      const cat=cats.find(c=>c.id===t.cat);
+      return `<div class="ti">
+        <div style="flex:1;min-width:0"><div class="ti-name">${esc(t.name)}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">${cat?cat.name:""}　${t.deletedAt||""}に移動</div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" onclick="restore(${t.id})">復元</button>
+          <button class="btn btn-danger btn-sm" onclick="permDel(${t.id})">完全削除</button>
+        </div>
+      </div>`;
+    }).join("");
+}
+
+function toggleTrash(){showTrash=!showTrash;refresh();}
+function complete(id){
+  if(!confirm("このタスクを完了してゴミ箱に移動しますか？"))return;
+  const ck=document.getElementById("ck"+id);const card=document.getElementById("tc"+id);
+  ck.classList.add("on");card.classList.add("done");
+  setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
+}
+function toTrash(id){
+  const card=document.getElementById("tc"+id);card.classList.add("done");
+  setTimeout(()=>{const t=tasks.find(t=>t.id===id);if(!t)return;t.deletedAt=new Date().toLocaleDateString("ja-JP");saveTrash(t);delTask(id);},340);
+}
+function restore(id){const t=trash.find(t=>t.id===id);if(!t)return;delete t.deletedAt;saveTask(t);delTrash(id);}
+function permDel(id){delTrash(id);}
+function emptyTrash(){if(!confirm("ゴミ箱を完全に空にしますか？"))return;fbDel("team2/trash");}
+
+function openDetail(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  const cat=cats.find(c=>c.id===t.cat);
+  const due=t.due?fmtDue(t.due,t.dueTime):null;
+  const ptMap={high:"🔴 高優先度",mid:"🟡 中優先度",low:"🟢 低優先度"};
+  const mc={"渡部":"#3A5EE5","横井":"#1A7A50","上浦":"#C0253A","太田":"#6B35C8"};
+  document.getElementById("d-name").textContent=t.name;
+  let tags="";
+  if(cat)tags+=`<span class="tag" style="background:${cat.color}18;color:${cat.color};font-size:12px">${esc(cat.name)}</span>`;
+  if(t.priority)tags+=`<span class="tag ${t.priority==="high"?"tph":t.priority==="mid"?"tpm":"tpl"}" style="font-size:12px">${ptMap[t.priority]}</span>`;
+  if(t.assignee)tags+=`<span class="tag" style="background:${(mc[t.assignee]||"#9B99A4")}18;color:${mc[t.assignee]||"#9B99A4"};font-size:12px">👤 ${esc(t.assignee)}</span>`;
+  if(due)tags+=`<span class="tag tdue ${due.cls}" style="font-size:12px">📅 ${due.label}</span>`;
+  document.getElementById("d-tags").innerHTML=tags;
+  const ms=document.getElementById("d-memo-sec");
+  if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
+  document.getElementById("d-a").textContent=t.assignee||"未定";
+  document.getElementById("d-p").textContent=ptMap[t.priority]||"なし";
+  document.getElementById("d-d").textContent=due?due.label:"未設定";
+  document.getElementById("d-c").textContent=cat?cat.name:"なし";
+  document.getElementById("d-edit").onclick=()=>{closeDetail();openEdit(id);};
+  document.getElementById("detail-modal").classList.add("open");
+}
+function closeDetail(){document.getElementById("detail-modal").classList.remove("open");}
+
+function fillCats(){document.getElementById("fc").innerHTML='<option value="">なし</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");}
+function openAdd(){
+  document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
+  ["fn","fm"].forEach(i=>document.getElementById(i).value="");
+  ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
+  fillCats();document.getElementById("fc").value="";
+  document.getElementById("task-modal").classList.add("open");
+  setTimeout(()=>document.getElementById("fn").focus(),180);
+}
+function openEdit(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  document.getElementById("eid").value=id;document.getElementById("mtitle").textContent="タスクを編集";
+  document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
+  document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
+  document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
+  fillCats();document.getElementById("fc").value=t.cat||"";
+  document.getElementById("task-modal").classList.add("open");
+  setTimeout(()=>document.getElementById("fn").focus(),180);
+}
+function closeModal(){document.getElementById("task-modal").classList.remove("open");}
+function saveTaskForm(){
+  const name=document.getElementById("fn").value.trim();
+  if(!name){const el=document.getElementById("fn");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
+  const eid=document.getElementById("eid").value;
+  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee:document.getElementById("fa").value};
+  if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
+  else window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
+  closeModal();
+}
+document.getElementById("fn").addEventListener("keydown",e=>{if(e.key==="Enter")saveTaskForm();});
+
+function openSettings(){
+  document.getElementById("swatches").innerHTML=ACCENTS.map(a=>`<div class="sw ${appCfg.accent===a?"sel":""}" style="background:${a}" onclick="pickAccent('${a}',this)"></div>`).join("");
+  renderCatList();document.getElementById("settings-modal").classList.add("open");
+}
+function closeSettings(){document.getElementById("settings-modal").classList.remove("open");}
+function renderCatList(){
+  document.getElementById("catlist").innerHTML=cats.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border)">
+      <span style="width:9px;height:9px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
+      <span style="flex:1;font-size:13px">${esc(c.name)}</span>
+      <span style="font-size:11px;color:var(--text3);font-family:monospace">${tasks.filter(t=>t.cat===c.id).length}件</span>
+      <button class="ib del" onclick="delCat('${c.id}')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/></svg></button>
+    </div>`).join("")||`<div style="padding:11px 14px;font-size:12.5px;color:var(--text3)">カテゴリがありません</div>`;
+}
+function pickAccent(h,el){appCfg.accent=h;applyAccent();document.querySelectorAll(".sw").forEach(s=>s.classList.remove("sel"));el.classList.add("sel");}
+function addCat(){
+  const name=document.getElementById("cnm").value.trim();if(!name)return;
+  cats.push({id:"cat_"+Date.now(),name,color:document.getElementById("ccol").value});
+  document.getElementById("cnm").value="";fbSet("team2/cats",cats);renderCatList();refresh();
+}
+document.getElementById("cnm").addEventListener("keydown",e=>{if(e.key==="Enter")addCat();});
+function delCat(id){
+  const cnt=tasks.filter(t=>t.cat===id).length;
+  if(cnt>0&&!confirm(`このカテゴリには${cnt}件のタスクがあります。削除しますか？`))return;
+  tasks.forEach(t=>{if(t.cat===id){t.cat="";window.saveTask(t);}});
+  cats=cats.filter(c=>c.id!==id);fbSet("team2/cats",cats);renderCatList();refresh();
+}
+function saveSettings(){fbSet("team2/cfg",appCfg);applyAccent();closeSettings();refresh();}
+function applyAccent(){document.documentElement.style.setProperty("--accent",appCfg.accent);document.documentElement.style.setProperty("--accent-bg",appCfg.accent+"1f");}
+
+document.addEventListener("keydown",e=>{
+  const inInput=["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
+  if(!inInput&&(e.key==="n"||e.key==="N"))openAdd();
+  if(e.key==="Escape"){closeModal();closeDetail();closeSettings();}
+});
+
+function initFirebase(){
+  _db=window._fb.db;_ref=window._fb.ref;_set=window._fb.set;_remove=window._fb.remove;_onValue=window._fb.onValue;
+  // Override saveTask to use Firebase (avoid conflict with form save)
+  const _saveTask=function(t){fbSet("team2/tasks/"+t.id,t);};
+  window.saveTask=_saveTask;
+  _onValue(_ref(_db,"team2/tasks"),snap=>{const val=snap.val();tasks=val?Object.values(val):[];refresh();});
+  _onValue(_ref(_db,"team2/trash"),snap=>{const val=snap.val();trash=val?Object.values(val):[];refresh();});
+  _onValue(_ref(_db,"team2/cats"),snap=>{
+    const val=snap.val();
+    if(val&&Array.isArray(val))cats=val;
+    else if(val&&typeof val==="object")cats=Object.values(val);
+    refresh();
+  });
+  _onValue(_ref(_db,"team2/cfg"),snap=>{
+    const val=snap.val();if(val)appCfg=Object.assign(appCfg,val);applyAccent();
+    _cfgLoaded=true;_tryHideLoading();
+  });
+  _onValue(_ref(_db,"team2/auth"),snap=>{
+    const val=snap.val();if(val&&typeof val==="object")_authData=val;
+    if(!_authLoaded)_checkSession();
+  });
+}
+if(window._fbReady)initFirebase();
+else window.addEventListener("fb-ready",initFirebase);
+</script>
+
+<script>
+// ===LOGIN SYSTEM===
+const LS_KEY='team2_auth_session';
+const SESSION_MS=7*24*60*60*1000;
+let _authData={};
+let _lsUser=null;
+let _authLoaded=false,_cfgLoaded=false;
+
+async function _sha256(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function _getSession(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'null');}catch{return null;}}
+function _setSession(uid,lid){localStorage.setItem(LS_KEY,JSON.stringify({userId:uid,loginId:lid,loginTime:Date.now()}));}
+function _tryHideLoading(){if(_authLoaded&&_cfgLoaded){const l=document.getElementById('loading');if(l)l.style.display='none';}}
+
+const _UC={渡部:{bg:'var(--cn)',ch:'渡'},横井:{bg:'var(--cm)',ch:'横'},上浦:{bg:'var(--cs)',ch:'上'},太田:{bg:'var(--ct)',ch:'太'}};
+
+function _checkSession(){
+  const s=_getSession();
+  const valid=s&&((Date.now()-s.loginTime)<SESSION_MS);
+  if(valid){
+    document.getElementById('login-overlay').classList.add('hidden');
+  }else if(s&&!valid){
+    document.getElementById('login-overlay').classList.remove('hidden');
+    lsSelectUser(s.userId,true);
+  }else{
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+  _authLoaded=true;_tryHideLoading();
+}
+
+function lsSelectUser(uid,expired=false){
+  _lsUser=uid;
+  document.getElementById('ls-step1').style.display='none';
+  document.getElementById('ls-step2').style.display='';
+  document.getElementById('ls-err').style.display='none';
+  const uc=_UC[uid]||{bg:'#9B99A4',ch:uid[0]};
+  document.getElementById('ls-suc').innerHTML=`<div class="uav" style="background:${uc.bg}">${uc.ch}</div><div><div class="ubtn-name">${uid}さん</div><div class="ubtn-sub">パスワードを入力してください</div></div>`;
+  const hasAuth=_authData[uid]&&_authData[uid].passwordHash;
+  const s=_getSession();
+  if(!hasAuth){
+    document.getElementById('ls-form-login').style.display='none';
+    document.getElementById('ls-form-setup').style.display='';
+    document.getElementById('ls-sid').value='';
+    document.getElementById('ls-spass').value='';
+    document.getElementById('ls-spass2').value='';
+    setTimeout(()=>document.getElementById('ls-sid').focus(),100);
+  }else{
+    document.getElementById('ls-form-setup').style.display='none';
+    document.getElementById('ls-form-login').style.display='';
+    document.getElementById('ls-swarn').style.display=expired?'':'none';
+    const savedId=(s&&s.userId===uid)?s.loginId:'';
+    document.getElementById('ls-lid').value=savedId||'';
+    document.getElementById('ls-lpass').value='';
+    setTimeout(()=>{
+      const li=document.getElementById('ls-lid');
+      (li.value?document.getElementById('ls-lpass'):li).focus();
+    },100);
+  }
+}
+
+function lsBack(){
+  document.getElementById('ls-step2').style.display='none';
+  document.getElementById('ls-step1').style.display='';
+  _lsUser=null;
+}
+
+function _lsErr(msg){const e=document.getElementById('ls-err');e.textContent=msg;e.style.display='';setTimeout(()=>e.style.display='none',3500);}
+
+async function lsSubmitLogin(){
+  const lid=document.getElementById('ls-lid').value.trim();
+  const lp=document.getElementById('ls-lpass').value;
+  if(!lid||!lp){_lsErr('IDとパスワードを入力してください');return;}
+  const st=_authData[_lsUser];
+  if(!st){_lsErr('認証情報が見つかりません');return;}
+  if(lid!==st.loginId){_lsErr('ログインIDが正しくありません');return;}
+  const h=await _sha256(lp);
+  if(h!==st.passwordHash){_lsErr('パスワードが正しくありません');return;}
+  _setSession(_lsUser,lid);
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
+async function lsSubmitSetup(){
+  const sid=document.getElementById('ls-sid').value.trim();
+  const sp=document.getElementById('ls-spass').value;
+  const sp2=document.getElementById('ls-spass2').value;
+  if(!sid){_lsErr('ログインIDを入力してください');return;}
+  if(sp.length<4){_lsErr('パスワードは4文字以上で設定してください');return;}
+  if(sp!==sp2){_lsErr('パスワードが一致しません');return;}
+  const h=await _sha256(sp);
+  const entry={loginId:sid,passwordHash:h};
+  fbSet('team2/auth/'+_lsUser,entry);
+  _authData[_lsUser]=entry;
+  _setSession(_lsUser,sid);
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
+document.getElementById('ls-lid').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-lpass').focus();});
+document.getElementById('ls-lpass').addEventListener('keydown',e=>{if(e.key==='Enter')lsSubmitLogin();});
+document.getElementById('ls-spass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ls-spass2').focus();});
+document.getElementById('ls-spass2').addEventListener('keydown',e=>{if(e.key==='Enter')lsSubmitSetup();});
+</script>
+</body>
+</html>

@@ -120,12 +120,22 @@ function wireSlackSend() {
     }
 
     const message = buildSlackMessage(fields);
+    const addToBoard = document.getElementById('addToTaskBoard').checked;
 
     sendBtn.disabled = true;
     setStatus(sendStatus, '送信中...', 'pending');
     try {
       await postToSlack(message);
-      setStatus(sendStatus, '送信リクエストを送りました（Incoming Webhookの仕様上、到達確認はSlack側で行ってください）', 'ok');
+      let statusText = '送信リクエストを送りました（Incoming Webhookの仕様上、到達確認はSlack側で行ってください）';
+      if (addToBoard) {
+        try {
+          await addTaskBoardEntry(fields);
+          statusText += '／タスク管理ボードにも追加しました';
+        } catch (e) {
+          statusText += '／タスク管理ボードへの追加に失敗しました: ' + (e && e.message ? e.message : String(e));
+        }
+      }
+      setStatus(sendStatus, statusText, 'ok');
     } catch (e) {
       setStatus(sendStatus, '送信エラー: ' + (e && e.message ? e.message : String(e)), 'err');
     } finally {
