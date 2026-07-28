@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>渡部T バーチャルオフィス</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const cfg = {
+  apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
+  authDomain: "taiki-tasks-933cc.firebaseapp.com",
+  databaseURL: "https://taiki-tasks-933cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taiki-tasks-933cc",
+  storageBucket: "taiki-tasks-933cc.firebasestorage.app",
+  messagingSenderId: "679381676234",
+  appId: "1:679381676234:web:20b54086cd302494c0c433"
+};
+const app = initializeApp(cfg);
+const db = getDatabase(app);
+window._fb = { db, ref, onValue };
+window._fbReady = true;
+window.dispatchEvent(new Event("fb-ready"));
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0EFE9;--surface:#FFF;--surface2:#EFEDE6;
+  --border:#E2DFD6;--border2:#C9C6BC;
+  --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
+  --accent:#3A5EE5;--r12:12px;--r16:16px;--r8:8px;
+  --font:"Instrument Sans",sans-serif;--mono:monospace;
+  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ct:#6B35C8;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+}
+body{
+  font-family:var(--font);color:var(--text);min-height:100vh;font-size:14px;
+  background:
+    radial-gradient(circle at 0% 0%,#e6ebfb 0%,var(--bg) 32%),
+    radial-gradient(circle at 100% 0%,#fbe9ea 0%,var(--bg) 32%),
+    var(--bg);
+}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.brand-name{font-size:15px;font-weight:600}
+.nav-link{font-size:13px;color:var(--accent);text-decoration:none}
+.wrap{max-width:960px;margin:0 auto;padding:28px 20px}
+.subtitle{font-size:13px;color:var(--text2);margin-bottom:20px}
+.office{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.desk{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:16px 12px 14px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:visible}
+.char-wrap{position:relative;height:120px;display:flex;align-items:flex-end;justify-content:center}
+.char{overflow:visible}
+.desk-name{font-size:14px;font-weight:600;margin-top:6px}
+.desk-status{font-size:12px;color:var(--text2);margin-top:2px;min-height:16px}
+.desk-badges{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;font-family:var(--mono)}
+.badge-count{background:var(--surface2);color:var(--text2)}
+.badge-due{background:#FEF4E3;color:#A05C00}
+.badge-due.over{background:#FDEAED;color:#C0253A}
+.badge-due.today{background:#FEF4E3;color:#A05C00}
+.badge-ok{background:#E8F5EE;color:#1A7A50}
+
+/* ---- idle: gentle bob ---- */
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.state-idle .char{animation:bob 2.6s ease-in-out infinite}
+
+/* ---- working: typing arms ---- */
+@keyframes typeArmL{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(3px) rotate(-8deg)}}
+@keyframes typeArmR{0%,100%{transform:translateY(3px) rotate(8deg)}50%{transform:translateY(0) rotate(0)}}
+.state-working .char{animation:bob 1.6s ease-in-out infinite}
+.state-working .arm-l{animation:typeArmL .5s ease-in-out infinite;transform-origin:60px 88px}
+.state-working .arm-r{animation:typeArmR .5s ease-in-out infinite;transform-origin:60px 88px}
+
+/* ---- overdue: worried shake + sweat ---- */
+@keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-2px) rotate(-2deg)}75%{transform:translateX(2px) rotate(2deg)}}
+@keyframes sweatDrip{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
+.state-overdue .char{animation:shake .35s ease-in-out infinite}
+.state-overdue .sweat{animation:sweatDrip 1.1s ease-in infinite}
+
+.mouth{display:none}
+.state-idle .mouth-neutral,
+.state-working .mouth-happy,
+.state-overdue .mouth-worried{display:block}
+.brow{display:none}
+.state-overdue .brow{display:block}
+.sweat{opacity:0}
+
+/* ---- celebrate burst on task completion ---- */
+@keyframes celebrate{0%{transform:scale(1)}30%{transform:scale(1.18)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+@keyframes sparklePop{0%{opacity:0;transform:translateY(6px) scale(.4)}30%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-18px) scale(.6)}}
+.desk.celebrating .char{animation:celebrate .6s ease}
+.sparkle{position:absolute;font-size:20px;opacity:0;pointer-events:none}
+.desk.celebrating .sparkle{animation:sparklePop .9s ease}
+.sparkle-1{left:20%;top:10px}
+.sparkle-2{left:50%;top:0px}
+.sparkle-3{left:75%;top:14px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">&#10022;</div>
+    <div class="brand-name">渡部T バーチャルオフィス</div>
+  </div>
+  <div style="display:flex;gap:14px;">
+    <a href="index.html" class="nav-link">← 商談メモ</a>
+    <a href="tasks.html" class="nav-link">タスク管理 →</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="subtitle">今のタスク状況に合わせて、みんなの様子がリアルタイムで変わります。</div>
+  <div class="office" id="office"></div>
+</div>
+
+<script>
+const PEOPLE = [
+  { key: '渡部', color: 'var(--cn)', ch: '渡' },
+  { key: '横井', color: 'var(--cm)', ch: '横' },
+  { key: '上浦', color: 'var(--cs)', ch: '上' },
+  { key: '太田', color: 'var(--ct)', ch: '太' }
+];
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function fmtDue(s) {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00'), t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.round((d - t) / 86400000);
+  if (diff < 0) return { label: Math.abs(diff) + '日超過', cls: 'over' };
+  if (diff === 0) return { label: '今日', cls: 'today' };
+  if (diff === 1) return { label: '明日', cls: '' };
+  return { label: d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }), cls: '' };
+}
+
+function charSVG(color) {
+  return `
+    <svg class="char" viewBox="0 0 120 140" width="120" height="120">
+      <ellipse cx="60" cy="128" rx="34" ry="6" fill="rgba(0,0,0,.06)"/>
+      <rect x="35" y="70" width="50" height="45" rx="18" fill="${color}"/>
+      <ellipse class="arm arm-l" cx="30" cy="92" rx="8" ry="14" fill="${color}"/>
+      <ellipse class="arm arm-r" cx="90" cy="92" rx="8" ry="14" fill="${color}"/>
+      <circle cx="60" cy="45" r="26" fill="#FFDDBB"/>
+      <path d="M34,40 Q34,10 60,10 Q86,10 86,40 Q86,26 60,24 Q34,26 34,40 Z" fill="#2E2A26"/>
+      <path class="brow brow-l" d="M46,34 q4,-4 9,-2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path class="brow brow-r" d="M65,32 q5,-2 9,2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="50" cy="44" r="3" fill="#2E2A26"/>
+      <circle cx="70" cy="44" r="3" fill="#2E2A26"/>
+      <path class="mouth mouth-neutral" d="M52,56 L68,56" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path class="mouth mouth-happy" d="M50,54 Q60,63 70,54" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path class="mouth mouth-worried" d="M50,60 Q60,52 70,60" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path class="sweat" d="M80,28 q5,9 0,13 q-5,-4 0,-13 z" fill="#7cc4ff"/>
+      <rect x="12" y="112" width="96" height="9" rx="3" fill="#D8D4C8"/>
+      <rect x="44" y="100" width="32" height="14" rx="2" fill="#4b5563"/>
+    </svg>
+  `;
+}
+
+function render(tasks) {
+  const officeEl = document.getElementById('office');
+  PEOPLE.forEach(p => {
+    const mine = tasks.filter(t => t.assignee === p.key);
+    const overdue = mine.filter(t => t.due && t.due < today());
+    const dueToday = mine.filter(t => t.due === today());
+    const upcoming = mine
+      .filter(t => t.due)
+      .sort((a, b) => a.due.localeCompare(b.due))[0];
+
+    let state = 'idle';
+    let statusText = 'のんびり中';
+    if (overdue.length) { state = 'overdue'; statusText = '期限切れ対応中…！'; }
+    else if (mine.length) { state = 'working'; statusText = '作業中'; }
+
+    let deskEl = document.getElementById('desk-' + p.key);
+    const isNew = !deskEl;
+    if (isNew) {
+      deskEl = document.createElement('div');
+      deskEl.id = 'desk-' + p.key;
+      deskEl.className = 'desk';
+      deskEl.innerHTML = `
+        <div class="char-wrap">
+          ${charSVG(p.color)}
+          <span class="sparkle sparkle-1">✨</span>
+          <span class="sparkle sparkle-2">🎉</span>
+          <span class="sparkle sparkle-3">✨</span>
+        </div>
+        <div class="desk-name">${p.key}</div>
+        <div class="desk-status"></div>
+        <div class="desk-badges"></div>
+      `;
+      officeEl.appendChild(deskEl);
+      deskEl.dataset.prevCount = String(mine.length);
+    }
+
+    const prevCount = Number(deskEl.dataset.prevCount || 0);
+    if (mine.length < prevCount) {
+      deskEl.classList.add('celebrating');
+      setTimeout(() => deskEl.classList.remove('celebrating'), 900);
+    }
+    deskEl.dataset.prevCount = String(mine.length);
+
+    deskEl.className = 'desk state-' + state + (deskEl.classList.contains('celebrating') ? ' celebrating' : '');
+    deskEl.querySelector('.desk-status').textContent = statusText;
+
+    const due = upcoming ? fmtDue(upcoming.due) : null;
+    const badgesEl = deskEl.querySelector('.desk-badges');
+    badgesEl.innerHTML =
+      `<span class="badge badge-count">${mine.length}件</span>` +
+      (mine.length === 0
+        ? `<span class="badge badge-ok">タスクなし</span>`
+        : due
+          ? `<span class="badge badge-due ${due.cls}">📅 ${due.label}</span>`
+          : '');
+  });
+}
+
+function initFirebase() {
+  const { db, ref, onValue } = window._fb;
+  onValue(ref(db, 'team2/tasks'), snap => {
+    const val = snap.val();
+    const tasks = val ? Object.values(val) : [];
+    render(tasks);
+  });
+}
+if (window._fbReady) initFirebase();
+else window.addEventListener('fb-ready', initFirebase);
+</script>
+</body>
+</html>
