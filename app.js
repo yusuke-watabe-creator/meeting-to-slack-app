@@ -105,6 +105,84 @@ async function callAiWorker(payload) {
   return result;
 }
 
+// ---- 「準備するもの」をタスクに分解して割り振る ----
+function buildAssigneeSelectHTML() {
+  return window.APP_CONSTANTS.ASSIGNEES
+    .map(a => `<option value="${a.id}">${a.id ? a.label.replace('さん', '') : '担当者を選択'}</option>`)
+    .join('');
+}
+
+function wireSplitPrepTasks() {
+  const splitBtn = document.getElementById('splitPrepBtn');
+  const splitStatus = document.getElementById('splitPrepStatus');
+  const listEl = document.getElementById('prepTaskList');
+  const registerRow = document.getElementById('registerPrepTasksRow');
+  const registerBtn = document.getElementById('registerPrepTasksBtn');
+  const registerStatus = document.getElementById('registerPrepTasksStatus');
+
+  splitBtn.addEventListener('click', async () => {
+    const prepItems = document.getElementById('prepItems').value.trim();
+    if (!prepItems) {
+      setStatus(splitStatus, '先に「準備するもの」を入力してください', 'err');
+      return;
+    }
+
+    splitBtn.disabled = true;
+    setStatus(splitStatus, '分解中...', 'pending');
+    try {
+      const result = await callAiWorker({ type: 'split_prep_items', prepItems });
+      const items = result.items || [];
+      listEl.innerHTML = items.map((text, i) => `
+        <div class="prep-task-row">
+          <input type="checkbox" class="prep-task-check" checked style="width:auto;">
+          <input type="text" class="prep-task-text" value="${text.replace(/"/g, '&quot;')}">
+          <select class="prep-task-assignee">${buildAssigneeSelectHTML()}</select>
+        </div>
+      `).join('');
+      registerRow.classList.toggle('hidden', items.length === 0);
+      setStatus(splitStatus, items.length + '件のタスクに分解しました。担当者を選んで登録してください', 'ok');
+    } catch (e) {
+      setStatus(splitStatus, 'エラー: ' + (e && e.message ? e.message : String(e)), 'err');
+    } finally {
+      splitBtn.disabled = false;
+    }
+  });
+
+  registerBtn.addEventListener('click', async () => {
+    const rows = Array.from(listEl.querySelectorAll('.prep-task-row'));
+    const toRegister = rows
+      .filter(row => row.querySelector('.prep-task-check').checked)
+      .map(row => ({
+        name: row.querySelector('.prep-task-text').value.trim(),
+        assigneeId: row.querySelector('.prep-task-assignee').value
+      }))
+      .filter(t => t.name);
+
+    if (!toRegister.length) {
+      setStatus(registerStatus, '登録するタスクがありません', 'err');
+      return;
+    }
+    const unassigned = toRegister.some(t => !t.assigneeId);
+    if (unassigned) {
+      setStatus(registerStatus, '担当者が未選択のタスクがあります', 'err');
+      return;
+    }
+
+    registerBtn.disabled = true;
+    setStatus(registerStatus, '登録中...', 'pending');
+    try {
+      for (const t of toRegister) {
+        await pushTaskBoardCard({ assigneeId: t.assigneeId, name: t.name, memo: '' });
+      }
+      setStatus(registerStatus, toRegister.length + '件のタスクをボードに登録しました', 'ok');
+    } catch (e) {
+      setStatus(registerStatus, 'エラー: ' + (e && e.message ? e.message : String(e)), 'err');
+    } finally {
+      registerBtn.disabled = false;
+    }
+  });
+}
+
 // ---- 文字起こしからメール本文をAI生成 ----
 function wireGenerateMailBody() {
   const generateBtn = document.getElementById('generateMailBtn');
@@ -317,6 +395,7 @@ window.addEventListener('DOMContentLoaded', () => {
   wireExtract();
   wireSlackSend();
   wireCopyButton();
+  wireSplitPrepTasks();
   wireMailSearch();
   wireGmailDraft();
   wireGenerateMailBody();

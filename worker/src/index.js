@@ -162,6 +162,31 @@ ${transcript}`;
   return jsonResponse({ body: bodyText });
 }
 
+async function handleSplitPrepItems(env, prepItems) {
+  const prompt = `以下は営業商談の「準備するもの」のメモです。ここに書かれている内容を、独立して1人に依頼できる単位のタスクに分解してください。
+出力は必ず次のJSON形式のみとし、前後に説明文やコードブロック記号は付けないでください。
+{"items": ["タスク名1", "タスク名2", ...]}
+条件:
+- 各タスク名は10〜20文字程度の簡潔な体言止め、または依頼できる形の短い文で書いてください（例:「導入事例資料の作成」「見積書の提出」「SF申請」）。
+- 元のメモに複数の作業が含まれている場合は、必ず分割してください。1つの作業しかない場合は1件のみでかまいません。
+- 元のメモに書かれていないタスクを勝手に追加しないでください。
+
+準備するもの:
+${prepItems}`;
+
+  const geminiRes = await callGeminiWithRetry(env, prompt);
+  if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
+
+  const data = await geminiRes.json();
+  const parsed = extractJson(extractGeminiText(data));
+  const items = (parsed && Array.isArray(parsed.items) ? parsed.items : [])
+    .map((s) => String(s).trim())
+    .filter(Boolean);
+  if (!items.length) return jsonResponse({ error: 'タスクへの分解に失敗しました' }, 502);
+
+  return jsonResponse({ items });
+}
+
 function geminiErrorResponse(geminiRes) {
   const isCongested = geminiRes.status === 503 || geminiRes.status === 429;
   const hint = isCongested ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）' : '';
@@ -189,16 +214,24 @@ export default {
       return jsonResponse({ error: '不正なリクエストです' }, 400);
     }
 
-    const transcript = (body && body.transcript || '').trim();
-    if (!transcript) {
-      return jsonResponse({ error: '文字起こしが空です' }, 400);
-    }
-    if (transcript.length > 100000) {
-      return jsonResponse({ error: '文字起こしが長すぎます（10万文字以内にしてください）' }, 400);
-    }
+    const type = body.type || 'extract';
 
     try {
-      const type = body.type || 'extract';
+      if (type === 'split_prep_items') {
+        const prepItems = (body && body.prepItems || '').trim();
+        if (!prepItems) return jsonResponse({ error: '準備するものが空です' }, 400);
+        if (prepItems.length > 5000) return jsonResponse({ error: '準備するものが長すぎます' }, 400);
+        return await handleSplitPrepItems(env, prepItems);
+      }
+
+      const transcript = (body && body.transcript || '').trim();
+      if (!transcript) {
+        return jsonResponse({ error: '文字起こしが空です' }, 400);
+      }
+      if (transcript.length > 100000) {
+        return jsonResponse({ error: '文字起こしが長すぎます（10万文字以内にしてください）' }, 400);
+      }
+
       if (type === 'mail_body') {
         return await handleMailBody(env, transcript, (body.nextAction || '').trim());
       }

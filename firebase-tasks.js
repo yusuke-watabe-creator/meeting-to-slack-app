@@ -34,16 +34,16 @@ async function getTaskBoardDb() {
   return _taskBoardDbPromise;
 }
 
-// dealName等をteam2/tasksと同じ形式で1件追加する。
-async function addTaskBoardEntry({ assigneeId, dealName, nextAction }) {
+// team2/tasksと同じ形式でタスクカードを1件追加する低レベル関数。
+async function pushTaskBoardCard({ assigneeId, name, memo }) {
   const { db, ref, set } = await getTaskBoardDb();
   const assignee = TASK_BOARD_ASSIGNEE[assigneeId] || '渡部';
-  const id = Date.now();
+  const id = Date.now() + Math.floor(Math.random() * 1000);
   const task = {
     id,
     createdAt: id,
-    name: dealName || nextAction,
-    memo: dealName ? nextAction : '',
+    name,
+    memo: memo || '',
     cat: '',
     priority: '',
     due: '',
@@ -52,4 +52,13 @@ async function addTaskBoardEntry({ assigneeId, dealName, nextAction }) {
   };
   await set(ref(db, 'team2/tasks/' + id), task);
   return task;
+}
+
+// dealName等をteam2/tasksと同じ形式で1件追加する（商談メモ送信時用）。
+async function addTaskBoardEntry({ assigneeId, dealName, nextAction }) {
+  return pushTaskBoardCard({
+    assigneeId,
+    name: dealName || nextAction,
+    memo: dealName ? nextAction : ''
+  });
 }

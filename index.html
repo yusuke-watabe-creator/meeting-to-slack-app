@@ -88,6 +88,14 @@
     margin-top: 8px;
     color: #1d4ed8;
   }
+  .prep-task-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .prep-task-row input[type="text"] { flex: 1; }
+  .prep-task-row select { width: 160px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -153,7 +161,21 @@
   </div>
 
   <div class="card">
-    <div class="card-title">4. 先方へのフォローアップメール下書き（Gmail）</div>
+    <div class="card-title">4. 「準備するもの」をタスクに分解して割り振る</div>
+    <div class="card-note">「準備するもの」の内容を個別タスクに分けて、それぞれ担当のISに割り振り、タスク管理ボードにカードとして追加します。</div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn btn-primary" id="splitPrepBtn">タスクに分解する</button>
+      <span class="status pending" id="splitPrepStatus"></span>
+    </div>
+    <div id="prepTaskList"></div>
+    <div class="btn-row hidden" id="registerPrepTasksRow">
+      <button class="btn btn-slack" id="registerPrepTasksBtn">選んだタスクをボードに登録する</button>
+      <span class="status pending" id="registerPrepTasksStatus"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">5. 先方へのフォローアップメール下書き（Gmail）</div>
     <div class="card-note">初回操作時にGoogleログイン・権限の許可が求められます（gmotech.jpアカウントでログインしてください）。</div>
 
     <div class="field" style="margin-bottom:10px;">
