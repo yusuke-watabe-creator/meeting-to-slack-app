@@ -40,7 +40,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --font:"Instrument Sans",sans-serif;--mono:monospace;
   --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ct:#6B35C8;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#f3ecfb 0%,var(--bg) 32%),radial-gradient(circle at 100% 0%,#e6ebfb 0%,var(--bg) 32%),var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .brand{display:flex;align-items:center;gap:9px}
 .brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
@@ -52,23 +52,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .btn-danger{background:none;color:var(--red);border:1px solid #f5c6cc}.btn-danger:hover{background:var(--red-bg)}
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn svg{width:13px;height:13px}
-.stats-bar{padding:10px 20px;display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
-.stat{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text2)}
+.stats-bar{padding:10px 20px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.stat{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);padding:5px 11px 5px 8px;border-radius:20px;background:var(--stat-bg,var(--surface2))}
 .dot{width:8px;height:8px;border-radius:50%}
-.num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)}
+.num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)}
 .sep{width:1px;height:16px;background:var(--border)}
 .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px 20px;align-items:start}
 .col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
 .col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
-.col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#EDF0FC,#f5f7ff)}
-.col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#E8F5EE,#f0faf4)}
-.col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FDEAED,#fff5f6)}
+.col-n .col-header{border-color:var(--cn);background:linear-gradient(135deg,#DCE3FA,#eef1fd)}
+.col-m .col-header{border-color:var(--cm);background:linear-gradient(135deg,#D4EDE0,#e9f6ee)}
+.col-s .col-header{border-color:var(--cs);background:linear-gradient(135deg,#FAD9DE,#fdedef)}
+.col-t .col-header{border-color:var(--ct);background:linear-gradient(135deg,#E7D9F7,#f3ecfb)}
+.col-n .card{border-left:3px solid var(--cn)}
+.col-m .card{border-left:3px solid var(--cm)}
+.col-s .card{border-left:3px solid var(--cs)}
+.col-t .card{border-left:3px solid var(--ct)}
 .col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
-.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
-.col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:700}
 .col-n .col-cnt{background:#c7d7ff;color:var(--cn)}
 .col-m .col-cnt{background:#a7f3d0;color:var(--cm)}
 .col-s .col-cnt{background:#fecdd3;color:var(--cs)}
+.col-t .col-cnt{background:#e9d5ff;color:var(--ct)}
 .sort-bar{display:flex;gap:4px;padding:6px 10px 2px}
 .sort-btn{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s}
 .sort-btn:hover{border-color:var(--border2);color:var(--text2)}
@@ -239,15 +245,15 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 </div>
 
 <div class="stats-bar">
-  <div class="stat"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="st0">0</span> 件</div>
+  <div class="stat" style="--stat-bg:#e6ebfb"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="st0">0</span> 件</div>
   <div class="sep"></div>
-  <div class="stat"><span class="dot" style="background:var(--cn)"></span>渡部 <span class="num" id="st1">0</span></div>
-  <div class="stat"><span class="dot" style="background:var(--cm)"></span>横井 <span class="num" id="st2">0</span></div>
-  <div class="stat"><span class="dot" style="background:var(--cs)"></span>上浦 <span class="num" id="st3">0</span></div>
-  <div class="stat"><span class="dot" style="background:var(--ct)"></span>太田 <span class="num" id="st6">0</span></div>
+  <div class="stat" style="--stat-bg:#dce3fa"><span class="dot" style="background:var(--cn)"></span>渡部 <span class="num" id="st1">0</span></div>
+  <div class="stat" style="--stat-bg:#d4ede0"><span class="dot" style="background:var(--cm)"></span>横井 <span class="num" id="st2">0</span></div>
+  <div class="stat" style="--stat-bg:#fad9de"><span class="dot" style="background:var(--cs)"></span>上浦 <span class="num" id="st3">0</span></div>
+  <div class="stat" style="--stat-bg:#e7d9f7"><span class="dot" style="background:var(--ct)"></span>太田 <span class="num" id="st6">0</span></div>
   <div class="sep"></div>
-  <div class="stat"><span class="dot" style="background:var(--red)"></span>高優先度 <span class="num" id="st4">0</span></div>
-  <div class="stat"><span class="dot" style="background:var(--amber)"></span>今日期限 <span class="num" id="st5">0</span></div>
+  <div class="stat" style="--stat-bg:#fce1e5"><span class="dot" style="background:var(--red)"></span>高優先度 <span class="num" id="st4">0</span></div>
+  <div class="stat" style="--stat-bg:#fbecd2"><span class="dot" style="background:var(--amber)"></span>今日期限 <span class="num" id="st5">0</span></div>
 </div>
 
 <div id="main">
@@ -288,10 +294,10 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       </div>
       <div class="col-body" id="cs"></div>
     </div>
-    <div class="col" style="border:1px solid var(--border);background:var(--surface2);border-radius:var(--r16);overflow:hidden">
-      <div class="col-header" style="border-bottom:3px solid var(--ct);background:linear-gradient(135deg,#F0EAFB,#f8f5ff)">
+    <div class="col col-t">
+      <div class="col-header">
         <div class="col-title"><div class="avatar" style="background:var(--ct)">太</div>太田</div>
-        <span class="col-cnt" id="ct0" style="background:#e9d5ff;color:var(--ct)">0</span>
+        <span class="col-cnt" id="ct0">0</span>
       </div>
       <div class="sort-bar">
         <button class="sort-btn active" onclick="setSort('t','created',this)">追加順</button>
