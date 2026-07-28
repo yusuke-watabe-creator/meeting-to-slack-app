@@ -10,7 +10,10 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
-    background: #ffffff;
+    background:
+      radial-gradient(circle at 0% 0%, #e6ebfb 0%, #ffffff 30%),
+      radial-gradient(circle at 100% 0%, #fbe9ea 0%, #ffffff 30%),
+      #ffffff;
     color: #1f2328;
     padding: 20px;
   }
@@ -33,12 +36,34 @@
   textarea { resize: vertical; height: 80px; }
   .card {
     border: 1px solid #e5e7eb;
+    border-left: 4px solid var(--card-accent, #d1d5db);
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 14px;
-    background: #fafafa;
+    background: var(--card-tint, #fafafa);
   }
-  .card-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #111827; }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--card-accent, #9ca3af);
+    flex-shrink: 0;
+  }
   .card-note { font-size: 11px; color: #6b7280; margin-bottom: 10px; }
   .btn {
     border: none;
@@ -106,8 +131,8 @@
   </div>
   <div class="subtitle">商談内容を入力 → #渡部チーム--26年 へSlack投稿 / 先方へのフォローアップメール下書きをGmailに作成</div>
 
-  <div class="card">
-    <div class="card-title">1. 基本情報</div>
+  <div class="card" style="--card-accent:#2563eb;--card-tint:#eef2ff;">
+    <div class="card-title"><span class="card-num">1</span>基本情報</div>
     <div class="row">
       <div class="field">
         <label>商談日</label>
@@ -126,8 +151,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">2. 文字起こし・議事録を貼り付け</div>
+  <div class="card" style="--card-accent:#6366f1;--card-tint:#eef0fe;">
+    <div class="card-title"><span class="card-num">2</span>文字起こし・議事録を貼り付け</div>
     <textarea id="transcript" style="height:140px;" placeholder="MiitelなどのAI要約・文字起こしをここに貼り付けてください"></textarea>
     <div class="btn-row">
       <button class="btn btn-primary" id="extractBtn">抽出する</button>
@@ -135,8 +160,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">3. 商談メモ（抽出結果を確認・編集できます）</div>
+  <div class="card" style="--card-accent:#7c3aed;--card-tint:#f5f0fe;">
+    <div class="card-title"><span class="card-num">3</span>商談メモ（抽出結果を確認・編集できます）</div>
     <div class="field" style="margin-bottom:10px;">
       <label>次回アクション</label>
       <textarea id="nextAction" placeholder="例: 来週水曜までに見積書を送付"></textarea>
@@ -160,8 +185,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">4. 「準備するもの」をタスクに分解して割り振る</div>
+  <div class="card" style="--card-accent:#0e7490;--card-tint:#eafafb;">
+    <div class="card-title"><span class="card-num">4</span>「準備するもの」をタスクに分解して割り振る</div>
     <div class="card-note">「準備するもの」の内容を個別タスクに分けて、それぞれ担当のISに割り振り、タスク管理ボードにカードとして追加します。</div>
     <div class="btn-row" style="margin-bottom:10px;">
       <button class="btn btn-primary" id="splitPrepBtn">タスクに分解する</button>
@@ -174,8 +199,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">5. 先方へのフォローアップメール下書き（Gmail）</div>
+  <div class="card" style="--card-accent:#c2410c;--card-tint:#fdf1eb;">
+    <div class="card-title"><span class="card-num">5</span>先方へのフォローアップメール下書き（Gmail）</div>
     <div class="card-note">初回操作時にGoogleログイン・権限の許可が求められます（gmotech.jpアカウントでログインしてください）。</div>
 
     <div class="field" style="margin-bottom:10px;">
