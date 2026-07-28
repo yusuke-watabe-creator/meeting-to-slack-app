@@ -168,11 +168,14 @@ function wireSplitPrepTasks() {
       return;
     }
 
+    const dealName = document.getElementById('dealName').value.trim();
+
     registerBtn.disabled = true;
     setStatus(registerStatus, '登録中...', 'pending');
     try {
       for (const t of toRegister) {
-        await pushTaskBoardCard({ assigneeId: t.assigneeId, name: t.name, memo: '' });
+        const name = dealName ? (dealName + ' ' + t.name) : t.name;
+        await pushTaskBoardCard({ assigneeId: t.assigneeId, name, memo: '' });
       }
       setStatus(registerStatus, toRegister.length + '件のタスクをボードに登録しました', 'ok');
     } catch (e) {
