@@ -165,8 +165,35 @@ function wrapBase64(base64) {
   return base64.replace(/(.{76})/g, '$1\r\n');
 }
 
+// Gmail設定に登録されている署名（デフォルトのsendAsエイリアスのもの）をHTMLで取得する。
+// 取得できない場合は空文字を返す（署名なしで下書きを作成する従来動作にフォールバック）。
+async function fetchGmailSignatureHtml() {
+  try {
+    const res = await gmailFetch('https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs', { method: 'GET' });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const sendAsList = data.sendAs || [];
+    const primary = sendAsList.find(s => s.isDefault) || sendAsList.find(s => s.isPrimary) || sendAsList[0];
+    return (primary && primary.signature) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function textToHtml(body) {
+  return escapeHtml(body).replace(/\n/g, '<br>');
+}
+
 // In-Reply-To/References を含むRFC2822メッセージを組み立て、Gmail drafts.create向けのraw(base64url)を返す。
-function buildDraftRaw({ to, cc, subject, body, inReplyToMessageId, referencesMessageIds }) {
+// signatureHtmlが指定された場合はtext/htmlとして本文の下に署名を付けて組み立てる。
+function buildDraftRaw({ to, cc, subject, body, inReplyToMessageId, referencesMessageIds, signatureHtml }) {
   const headerLines = [];
   headerLines.push('To: ' + to.join(', '));
   if (cc && cc.length) headerLines.push('Cc: ' + cc.join(', '));
@@ -176,16 +203,25 @@ function buildDraftRaw({ to, cc, subject, body, inReplyToMessageId, referencesMe
     headerLines.push('References: ' + referencesMessageIds.join(' '));
   }
   headerLines.push('MIME-Version: 1.0');
-  headerLines.push('Content-Type: text/plain; charset="UTF-8"');
+
+  let contentBody;
+  if (signatureHtml) {
+    headerLines.push('Content-Type: text/html; charset="UTF-8"');
+    contentBody = '<div>' + textToHtml(body) + '</div><br>' + signatureHtml;
+  } else {
+    headerLines.push('Content-Type: text/plain; charset="UTF-8"');
+    contentBody = body;
+  }
   headerLines.push('Content-Transfer-Encoding: base64');
 
-  const bodyBase64 = wrapBase64(utf8ToBase64(body));
+  const bodyBase64 = wrapBase64(utf8ToBase64(contentBody));
   const mime = headerLines.join('\r\n') + '\r\n\r\n' + bodyBase64 + '\r\n';
   return toBase64Url(utf8ToBase64(mime));
 }
 
 async function createGmailDraft({ to, cc, subject, body, threadId, inReplyToMessageId, referencesMessageIds }) {
-  const raw = buildDraftRaw({ to, cc, subject, body, inReplyToMessageId, referencesMessageIds });
+  const signatureHtml = await fetchGmailSignatureHtml();
+  const raw = buildDraftRaw({ to, cc, subject, body, inReplyToMessageId, referencesMessageIds, signatureHtml });
   const payload = { message: { raw } };
   if (threadId) payload.message.threadId = threadId;
 

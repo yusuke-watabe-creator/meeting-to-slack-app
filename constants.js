@@ -8,5 +8,5 @@ window.APP_CONSTANTS = {
     { id: 'U06BHSCK811', label: '太田 小百合さん', mention: '@太田小百合' },
     { id: 'U06C6P5EW3A', label: '上浦 諒大さん', mention: '@上浦諒大' }
   ],
-  GMAIL_SCOPES: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose'
+  GMAIL_SCOPES: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.settings.basic'
 };
