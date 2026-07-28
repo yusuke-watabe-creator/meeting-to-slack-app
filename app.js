@@ -137,6 +137,7 @@ function wireSplitPrepTasks() {
           <input type="checkbox" class="prep-task-check" checked style="width:auto;">
           <input type="text" class="prep-task-text" value="${text.replace(/"/g, '&quot;')}">
           <select class="prep-task-assignee">${buildAssigneeSelectHTML()}</select>
+          <input type="date" class="prep-task-due" title="期日（任意）">
         </div>
       `).join('');
       registerRow.classList.toggle('hidden', items.length === 0);
@@ -154,7 +155,8 @@ function wireSplitPrepTasks() {
       .filter(row => row.querySelector('.prep-task-check').checked)
       .map(row => ({
         name: row.querySelector('.prep-task-text').value.trim(),
-        assigneeId: row.querySelector('.prep-task-assignee').value
+        assigneeId: row.querySelector('.prep-task-assignee').value,
+        due: row.querySelector('.prep-task-due').value
       }))
       .filter(t => t.name);
 
@@ -175,7 +177,7 @@ function wireSplitPrepTasks() {
     try {
       for (const t of toRegister) {
         const name = dealName ? (dealName + ' ' + t.name) : t.name;
-        await pushTaskBoardCard({ assigneeId: t.assigneeId, name, memo: '' });
+        await pushTaskBoardCard({ assigneeId: t.assigneeId, name, memo: '', due: t.due });
       }
       setStatus(registerStatus, toRegister.length + '件のタスクをボードに登録しました', 'ok');
     } catch (e) {
