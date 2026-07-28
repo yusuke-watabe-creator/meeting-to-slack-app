@@ -48,8 +48,11 @@ body{
 .nav-link{font-size:13px;color:var(--accent);text-decoration:none}
 .wrap{max-width:960px;margin:0 auto;padding:28px 20px}
 .subtitle{font-size:13px;color:var(--text2);margin-bottom:20px}
-.office{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
-.desk{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:16px 12px 14px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:visible}
+.office{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:24px 20px 16px}
+.seats{display:flex;justify-content:space-around;align-items:flex-end;gap:8px}
+.island-table{height:14px;background:#D8D4C8;border-radius:7px;box-shadow:0 2px 0 rgba(0,0,0,.05);margin:0 4px 10px}
+.office-info{display:flex;justify-content:space-around;gap:8px}
+.desk{text-align:center;position:relative;overflow:visible;flex:1;max-width:200px}
 .char-wrap{position:relative;height:120px;display:flex;align-items:flex-end;justify-content:center}
 .char{overflow:visible}
 .desk-name{font-size:14px;font-weight:600;margin-top:6px}
@@ -112,16 +115,21 @@ body{
 </div>
 
 <div class="wrap">
-  <div class="subtitle">今のタスク状況に合わせて、みんなの様子がリアルタイムで変わります。</div>
-  <div class="office" id="office"></div>
+  <div class="subtitle">今のタスク状況に合わせて、みんなの様子がリアルタイムで変わります（島型の座席・渡部が一番端）。</div>
+  <div class="office">
+    <div class="seats" id="office-seats"></div>
+    <div class="island-table"></div>
+    <div class="office-info" id="office-info"></div>
+  </div>
 </div>
 
 <script>
+// 渡部が一番端（左端）の島型座席。太田さんは女性キャラクター。
 const PEOPLE = [
   { key: '渡部', color: 'var(--cn)', ch: '渡' },
   { key: '横井', color: 'var(--cm)', ch: '横' },
   { key: '上浦', color: 'var(--cs)', ch: '上' },
-  { key: '太田', color: 'var(--ct)', ch: '太' }
+  { key: '太田', color: 'var(--ct)', ch: '太', female: true }
 ];
 
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -136,35 +144,44 @@ function fmtDue(s) {
   return { label: d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }), cls: '' };
 }
 
-function charSVG(color) {
+function charSVG(color, isFemale) {
+  const longHair = isFemale ? `
+      <path d="M33,36 Q29,58 35,80 Q42,75 39,50 Z" fill="#2E2A26"/>
+      <path d="M87,36 Q91,58 85,80 Q78,75 81,50 Z" fill="#2E2A26"/>
+  ` : '';
+  const lashes = isFemale ? `
+      <path d="M47,41 l-3,-3" stroke="#2E2A26" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M73,41 l3,-3" stroke="#2E2A26" stroke-width="1.5" stroke-linecap="round"/>
+  ` : '';
   return `
     <svg class="char" viewBox="0 0 120 140" width="120" height="120">
       <ellipse cx="60" cy="128" rx="34" ry="6" fill="rgba(0,0,0,.06)"/>
       <rect x="35" y="70" width="50" height="45" rx="18" fill="${color}"/>
       <ellipse class="arm arm-l" cx="30" cy="92" rx="8" ry="14" fill="${color}"/>
       <ellipse class="arm arm-r" cx="90" cy="92" rx="8" ry="14" fill="${color}"/>
+      ${longHair}
       <circle cx="60" cy="45" r="26" fill="#FFDDBB"/>
       <path d="M34,40 Q34,10 60,10 Q86,10 86,40 Q86,26 60,24 Q34,26 34,40 Z" fill="#2E2A26"/>
       <path class="brow brow-l" d="M46,34 q4,-4 9,-2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path class="brow brow-r" d="M65,32 q5,-2 9,2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
       <circle cx="50" cy="44" r="3" fill="#2E2A26"/>
       <circle cx="70" cy="44" r="3" fill="#2E2A26"/>
+      ${lashes}
       <path class="mouth mouth-neutral" d="M52,56 L68,56" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
       <path class="mouth mouth-happy" d="M50,54 Q60,63 70,54" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
       <path class="mouth mouth-worried" d="M50,60 Q60,52 70,60" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
       <path class="sweat" d="M80,28 q5,9 0,13 q-5,-4 0,-13 z" fill="#7cc4ff"/>
-      <rect x="12" y="112" width="96" height="9" rx="3" fill="#D8D4C8"/>
       <rect x="44" y="100" width="32" height="14" rx="2" fill="#4b5563"/>
     </svg>
   `;
 }
 
 function render(tasks) {
-  const officeEl = document.getElementById('office');
+  const seatsEl = document.getElementById('office-seats');
+  const infoEl = document.getElementById('office-info');
   PEOPLE.forEach(p => {
     const mine = tasks.filter(t => t.assignee === p.key);
     const overdue = mine.filter(t => t.due && t.due < today());
-    const dueToday = mine.filter(t => t.due === today());
     const upcoming = mine
       .filter(t => t.due)
       .sort((a, b) => a.due.localeCompare(b.due))[0];
@@ -174,39 +191,48 @@ function render(tasks) {
     if (overdue.length) { state = 'overdue'; statusText = '期限切れ対応中…！'; }
     else if (mine.length) { state = 'working'; statusText = '作業中'; }
 
-    let deskEl = document.getElementById('desk-' + p.key);
-    const isNew = !deskEl;
+    let seatEl = document.getElementById('seat-' + p.key);
+    let infoDeskEl = document.getElementById('info-' + p.key);
+    const isNew = !seatEl;
     if (isNew) {
-      deskEl = document.createElement('div');
-      deskEl.id = 'desk-' + p.key;
-      deskEl.className = 'desk';
-      deskEl.innerHTML = `
+      seatEl = document.createElement('div');
+      seatEl.id = 'seat-' + p.key;
+      seatEl.className = 'desk';
+      seatEl.innerHTML = `
         <div class="char-wrap">
-          ${charSVG(p.color)}
+          ${charSVG(p.color, p.female)}
           <span class="sparkle sparkle-1">✨</span>
           <span class="sparkle sparkle-2">🎉</span>
           <span class="sparkle sparkle-3">✨</span>
         </div>
+      `;
+      seatsEl.appendChild(seatEl);
+
+      infoDeskEl = document.createElement('div');
+      infoDeskEl.id = 'info-' + p.key;
+      infoDeskEl.className = 'desk';
+      infoDeskEl.innerHTML = `
         <div class="desk-name">${p.key}</div>
         <div class="desk-status"></div>
         <div class="desk-badges"></div>
       `;
-      officeEl.appendChild(deskEl);
-      deskEl.dataset.prevCount = String(mine.length);
+      infoEl.appendChild(infoDeskEl);
+
+      seatEl.dataset.prevCount = String(mine.length);
     }
 
-    const prevCount = Number(deskEl.dataset.prevCount || 0);
+    const prevCount = Number(seatEl.dataset.prevCount || 0);
     if (mine.length < prevCount) {
-      deskEl.classList.add('celebrating');
-      setTimeout(() => deskEl.classList.remove('celebrating'), 900);
+      seatEl.classList.add('celebrating');
+      setTimeout(() => seatEl.classList.remove('celebrating'), 900);
     }
-    deskEl.dataset.prevCount = String(mine.length);
+    seatEl.dataset.prevCount = String(mine.length);
 
-    deskEl.className = 'desk state-' + state + (deskEl.classList.contains('celebrating') ? ' celebrating' : '');
-    deskEl.querySelector('.desk-status').textContent = statusText;
+    seatEl.className = 'desk state-' + state + (seatEl.classList.contains('celebrating') ? ' celebrating' : '');
+    infoDeskEl.querySelector('.desk-status').textContent = statusText;
 
     const due = upcoming ? fmtDue(upcoming.due) : null;
-    const badgesEl = deskEl.querySelector('.desk-badges');
+    const badgesEl = infoDeskEl.querySelector('.desk-badges');
     badgesEl.innerHTML =
       `<span class="badge badge-count">${mine.length}件</span>` +
       (mine.length === 0
