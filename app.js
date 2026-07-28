@@ -75,15 +75,7 @@ function wireExtract() {
     extractBtn.disabled = true;
     setStatus(extractStatus, '抽出中...', 'pending');
     try {
-      const res = await fetch(extractApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript })
-      });
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || ('抽出エラー(' + res.status + ')'));
-      }
+      const result = await callAiWorker({ type: 'extract', transcript });
       document.getElementById('nextAction').value = result.next_action || '';
       document.getElementById('prepItems').value = result.prep_items || '';
       document.getElementById('dealFeedback').value = result.deal_feedback || '';
@@ -92,6 +84,50 @@ function wireExtract() {
       setStatus(extractStatus, 'エラー: ' + (e && e.message ? e.message : String(e)), 'err');
     } finally {
       extractBtn.disabled = false;
+    }
+  });
+}
+
+async function callAiWorker(payload) {
+  const extractApiUrl = window.APP_CONFIG.EXTRACT_API_URL;
+  if (!extractApiUrl || extractApiUrl.includes('REPLACE')) {
+    throw new Error('EXTRACT_API_URL が未設定です（config.js を確認してください）');
+  }
+  const res = await fetch(extractApiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await res.json();
+  if (!res.ok) {
+    throw new Error(result.error || ('AI呼び出しエラー(' + res.status + ')'));
+  }
+  return result;
+}
+
+// ---- 文字起こしからメール本文をAI生成 ----
+function wireGenerateMailBody() {
+  const generateBtn = document.getElementById('generateMailBtn');
+  const generateStatus = document.getElementById('generateMailStatus');
+
+  generateBtn.addEventListener('click', async () => {
+    const transcript = document.getElementById('transcript').value.trim();
+    if (!transcript) {
+      setStatus(generateStatus, '先に「2. 文字起こし・議事録を貼り付け」に入力してください', 'err');
+      return;
+    }
+    const nextAction = document.getElementById('nextAction').value.trim();
+
+    generateBtn.disabled = true;
+    setStatus(generateStatus, '生成中...', 'pending');
+    try {
+      const result = await callAiWorker({ type: 'mail_body', transcript, nextAction });
+      document.getElementById('mailBody').value = result.body || '';
+      setStatus(generateStatus, '生成しました。内容を確認・編集してください', 'ok');
+    } catch (e) {
+      setStatus(generateStatus, 'エラー: ' + (e && e.message ? e.message : String(e)), 'err');
+    } finally {
+      generateBtn.disabled = false;
     }
   });
 }
@@ -283,4 +319,5 @@ window.addEventListener('DOMContentLoaded', () => {
   wireCopyButton();
   wireMailSearch();
   wireGmailDraft();
+  wireGenerateMailBody();
 });

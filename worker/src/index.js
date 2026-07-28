@@ -1,4 +1,4 @@
-// Cloudflare Worker: 商談文字起こし → 次回アクション/準備するもの/案件フィードバック 抽出プロキシ
+// Cloudflare Worker: 商談文字起こし → 各種AI補助（商談メモ抽出／フォローアップメール本文生成）プロキシ
 // GEMINI_API_KEYはCloudflareのシークレットとして保存し、ブラウザには一切渡さない。
 // Google AI Studio (https://aistudio.google.com/apikey) はクレジットカード登録不要の無料枠があるため採用。
 
@@ -35,6 +35,115 @@ function extractJson(text) {
   }
 }
 
+function stripCodeFence(text) {
+  return String(text || '')
+    .trim()
+    .replace(/^```[a-z]*\n?/i, '')
+    .replace(/```$/, '')
+    .trim();
+}
+
+// 混雑時(503/429)は一時的なことが多いため、間隔を空けながら複数回試す。
+// 同じモデルで数回試してもダメなら、より軽量なモデル(flash-lite)にも切り替えてみる。
+async function callGeminiWithRetry(env, prompt) {
+  const callGemini = (model) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+  const isCongested = (res) => res.status === 503 || res.status === 429;
+
+  const attempts = [
+    { model: MODEL, delayMs: 0 },
+    { model: MODEL, delayMs: 1500 },
+    { model: MODEL, delayMs: 3000 },
+    { model: FALLBACK_MODEL, delayMs: 1000 },
+    { model: FALLBACK_MODEL, delayMs: 3000 },
+  ];
+
+  let res;
+  for (const attempt of attempts) {
+    if (attempt.delayMs) await new Promise((r) => setTimeout(r, attempt.delayMs));
+    res = await callGemini(attempt.model);
+    if (!isCongested(res)) break;
+  }
+  return res;
+}
+
+function extractGeminiText(data) {
+  return (
+    (data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts[0] &&
+      data.candidates[0].content.parts[0].text) ||
+    ''
+  );
+}
+
+async function handleExtract(env, transcript) {
+  const prompt = `以下は営業商談の文字起こし、またはAI議事録です。この内容だけから、次の3項目を日本語・簡潔な箇条書きで抽出してください。
+出力は必ず次のJSON形式のみとし、前後に説明文やコードブロック記号は付けないでください。
+{"next_action": "次回アクション(具体的な行動・期限があれば含める)", "prep_items": "準備するもの(資料・見積り・社内確認事項など)", "deal_feedback": "案件フィードバック(相手の反応・温度感・懸念点・受注可能性)"}
+内容から明確に読み取れない項目は "文字起こしからは判断できません" としてください。
+
+文字起こし:
+${transcript}`;
+
+  const geminiRes = await callGeminiWithRetry(env, prompt);
+  if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
+
+  const data = await geminiRes.json();
+  const parsed = extractJson(extractGeminiText(data));
+  if (!parsed) return jsonResponse({ error: '抽出結果の解析に失敗しました' }, 502);
+
+  return jsonResponse({
+    next_action: parsed.next_action || '',
+    prep_items: parsed.prep_items || '',
+    deal_feedback: parsed.deal_feedback || '',
+  });
+}
+
+async function handleMailBody(env, transcript, nextAction) {
+  const prompt = `あなたは営業担当者のアシスタントです。以下の商談の文字起こしと、次回アクションのメモをもとに、先方に送るフォローアップメールの本文を日本語のビジネスメール形式で作成してください。
+条件:
+- 宛名（「○○様」等）は書かないでください。本文はお礼の一文から書き始めてください（例:「本日はお打ち合わせのお時間をいただき、誠にありがとうございました。」）。
+- 本日の商談内容を踏まえた、次回アクション「${nextAction || '未定'}」に関するご案内・お願いを分かりやすく書いてください。
+- 本文の最後に署名・氏名・会社名は一切書かないでください（Gmail側の署名が自動で付くため）。お礼や依頼の一文で本文を終えてください。
+- 本文のみを出力してください。件名、説明文、前置き、コードブロック記号（\`\`\`）は一切出力しないでください。
+
+文字起こし:
+${transcript}`;
+
+  const geminiRes = await callGeminiWithRetry(env, prompt);
+  if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
+
+  const data = await geminiRes.json();
+  const bodyText = stripCodeFence(extractGeminiText(data));
+  if (!bodyText) return jsonResponse({ error: 'メール本文の生成に失敗しました' }, 502);
+
+  return jsonResponse({ body: bodyText });
+}
+
+function geminiErrorResponse(geminiRes) {
+  const isCongested = geminiRes.status === 503 || geminiRes.status === 429;
+  const hint = isCongested ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）' : '';
+  return geminiRes
+    .text()
+    .catch(() => '')
+    .then((errText) =>
+      jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + ')' + hint + ': ' + errText }, 502)
+    );
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
@@ -59,75 +168,14 @@ export default {
       return jsonResponse({ error: '文字起こしが長すぎます（10万文字以内にしてください）' }, 400);
     }
 
-    const prompt = `以下は営業商談の文字起こし、またはAI議事録です。この内容だけから、次の3項目を日本語・簡潔な箇条書きで抽出してください。
-出力は必ず次のJSON形式のみとし、前後に説明文やコードブロック記号は付けないでください。
-{"next_action": "次回アクション(具体的な行動・期限があれば含める)", "prep_items": "準備するもの(資料・見積り・社内確認事項など)", "deal_feedback": "案件フィードバック(相手の反応・温度感・懸念点・受注可能性)"}
-内容から明確に読み取れない項目は "文字起こしからは判断できません" としてください。
-
-文字起こし:
-${transcript}`;
-
-    const callGemini = (model) =>
-      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      });
-
-    const isCongested = (res) => res.status === 503 || res.status === 429;
-
-    // 混雑時(503/429)は一時的なことが多いため、間隔を空けながら複数回試す。
-    // 同じモデルで数回試してもダメなら、より軽量なモデル(flash-lite)にも切り替えてみる。
-    const attempts = [
-      { model: MODEL, delayMs: 0 },
-      { model: MODEL, delayMs: 1500 },
-      { model: MODEL, delayMs: 3000 },
-      { model: FALLBACK_MODEL, delayMs: 1000 },
-      { model: FALLBACK_MODEL, delayMs: 3000 },
-    ];
-
-    let geminiRes;
     try {
-      for (const attempt of attempts) {
-        if (attempt.delayMs) await new Promise((r) => setTimeout(r, attempt.delayMs));
-        geminiRes = await callGemini(attempt.model);
-        if (!isCongested(geminiRes)) break;
+      const type = body.type || 'extract';
+      if (type === 'mail_body') {
+        return await handleMailBody(env, transcript, (body.nextAction || '').trim());
       }
+      return await handleExtract(env, transcript);
     } catch (e) {
       return jsonResponse({ error: 'AI呼び出しに失敗しました: ' + e.message }, 502);
     }
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => '');
-      const hint = isCongested(geminiRes)
-        ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）'
-        : '';
-      return jsonResponse({ error: 'AI APIエラー(' + geminiRes.status + ')' + hint + ': ' + errText }, 502);
-    }
-
-    const data = await geminiRes.json();
-    const rawText =
-      (data.candidates &&
-        data.candidates[0] &&
-        data.candidates[0].content &&
-        data.candidates[0].content.parts &&
-        data.candidates[0].content.parts[0] &&
-        data.candidates[0].content.parts[0].text) ||
-      '';
-    const parsed = extractJson(rawText);
-    if (!parsed) {
-      return jsonResponse({ error: '抽出結果の解析に失敗しました' }, 502);
-    }
-
-    return jsonResponse({
-      next_action: parsed.next_action || '',
-      prep_items: parsed.prep_items || '',
-      deal_feedback: parsed.deal_feedback || '',
-    });
   },
 };

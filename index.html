@@ -187,8 +187,12 @@
       <input type="text" id="mailSubject" placeholder="例: 本日はお打ち合わせありがとうございました">
     </div>
     <div class="field" style="margin-bottom:10px;">
-      <label>本文（手入力）</label>
+      <label>本文</label>
       <textarea id="mailBody" style="height:180px;" placeholder="本文を入力してください（署名は不要。担当者名を入力すると本文冒頭に「〇〇様」が自動挿入されます）"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="generateMailBtn">文字起こしから生成する</button>
+        <span class="status pending" id="generateMailStatus"></span>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-gmail" id="createGmailBtn">Gmail下書きを作成</button>
