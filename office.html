@@ -58,8 +58,9 @@ body{
 .stage-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:16px;overflow-x:auto}
 
 /* ---- room ---- */
+.room-scene{width:700px;margin:0 auto}
 .room{
-  position:relative;width:700px;height:420px;margin:0 auto;border-radius:var(--r12);overflow:hidden;
+  position:relative;width:700px;height:420px;border-radius:0 0 var(--r12) var(--r12);overflow:hidden;
   background-image:
     linear-gradient(90deg, rgba(0,0,0,.025) 1px, transparent 1px),
     linear-gradient(rgba(0,0,0,.025) 1px, transparent 1px);
@@ -67,6 +68,35 @@ body{
   background-color:var(--floor);
   border:2px solid var(--border2);
 }
+.floor-contact-shadow{position:absolute;left:0;right:0;top:0;height:34px;background:linear-gradient(180deg,rgba(0,0,0,.12),transparent);pointer-events:none}
+
+/* ---- back wall: gives the room a sense of depth/enclosure ---- */
+.wall-back{
+  position:relative;width:700px;height:150px;border-radius:var(--r12) var(--r12) 0 0;overflow:hidden;
+  background:linear-gradient(180deg,#F3EEE0 0%,#F3EEE0 62%,#DCD0B4 62%,#DCD0B4 100%);
+  border:2px solid var(--border2);border-bottom:none;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.5);
+}
+.wall-back::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,18,30,.16),transparent 170px);pointer-events:none}
+.wall-back::after{content:"";position:absolute;left:0;right:0;top:96px;height:2px;background:rgba(0,0,0,.12)}
+.ceiling-light{position:absolute;top:8px;width:14px;height:14px;border-radius:50%;background:radial-gradient(#FFFBEA,#FFD98A);box-shadow:0 0 16px 6px rgba(255,217,138,.5)}
+.window{position:absolute;top:16px;width:80px;height:80px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#BFE0F5,#EAF6FF);border:4px solid #fff;box-shadow:0 0 0 1px var(--border2)}
+.window::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.85);transform:translateX(-50%)}
+.window::after{content:"";position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,255,255,.85);transform:translateY(-50%)}
+.wall-clock{position:absolute;top:18px;width:42px;height:42px;border-radius:50%;background:#fff;border:3px solid #2B2F38;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.wall-clock::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;background:#2B2F38;border-radius:50%;transform:translate(-50%,-50%);z-index:1}
+.clock-hand{position:absolute;left:50%;bottom:50%;background:#2B2F38;transform-origin:bottom center}
+.clock-hand.hh{width:2px;height:9px;transform:translateX(-50%) rotate(50deg)}
+.clock-hand.mh{width:1.5px;height:13px;transform:translateX(-50%) rotate(140deg)}
+.wall-poster{position:absolute;left:20px;top:16px;width:56px;height:76px;border:4px solid #fff;box-shadow:0 0 0 1px var(--border2);background:linear-gradient(150deg,#7DA8E0,#B98CD8 55%,#F2B77E)}
+.wall-shelf{position:absolute;left:90px;top:60px;width:70px;height:8px;background:var(--wood2);border-radius:2px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.wall-shelf .book{position:absolute;bottom:8px;width:9px;border-radius:1px}
+
+/* ---- floor decor: cabinet + extra plant, in the open gap between the two zones ---- */
+.cabinet{position:absolute;left:300px;top:210px;width:100px;height:120px;background:var(--wood2);border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.cabinet .shelf-line{position:absolute;left:6px;right:6px;height:3px;background:rgba(0,0,0,.18)}
+.cabinet .cbook{position:absolute;bottom:4px;border-radius:1px}
+
 .zone{position:absolute;border-radius:10px;display:flex;flex-direction:column}
 .zone-label{position:absolute;top:6px;left:10px;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;z-index:2}
 .zone-break{left:16px;top:170px;width:210px;height:220px;background:#EAF3DE;border:2px dashed #C3D9A0}
@@ -194,25 +224,54 @@ body{
 
 <div class="wrap">
   <div class="stage-card">
-    <div class="room" id="room">
-      <div class="zone zone-break"><span class="zone-label">休憩スペース</span></div>
-      <div class="zone zone-meeting"><span class="zone-label">会議室</span></div>
-      <div class="coffee-machine"></div>
-      <div class="plant-leaf"></div><div class="plant-pot"></div>
-      <div class="sofa">
-        <div class="sofa-arm-l"></div><div class="sofa-arm-r"></div>
-        <div class="sofa-back"></div><div class="sofa-seat"></div>
+    <div class="room-scene">
+      <div class="wall-back">
+        <div class="ceiling-light" style="left:180px;"></div>
+        <div class="ceiling-light" style="left:365px;"></div>
+        <div class="ceiling-light" style="left:660px;"></div>
+        <div class="wall-poster"></div>
+        <div class="wall-shelf">
+          <div class="book" style="left:6px;height:16px;background:var(--cn)"></div>
+          <div class="book" style="left:20px;height:20px;background:var(--cs)"></div>
+          <div class="book" style="left:34px;height:14px;background:var(--cm)"></div>
+        </div>
+        <div class="window" style="left:260px;"></div>
+        <div class="window" style="left:400px;"></div>
+        <div class="wall-clock" style="left:600px;">
+          <div class="clock-hand hh"></div>
+          <div class="clock-hand mh"></div>
+        </div>
       </div>
-      <div class="vending">
-        <div class="vending-window"></div>
-        <div class="vending-slot"></div>
+      <div class="room" id="room">
+        <div class="floor-contact-shadow"></div>
+        <div class="zone zone-break"><span class="zone-label">休憩スペース</span></div>
+        <div class="zone zone-meeting"><span class="zone-label">会議室</span></div>
+        <div class="cabinet">
+          <div class="shelf-line" style="top:40px;"></div>
+          <div class="shelf-line" style="top:80px;"></div>
+          <div class="cbook" style="left:10px;width:9px;height:20px;background:var(--cn)"></div>
+          <div class="cbook" style="left:24px;width:10px;height:16px;background:var(--cs)"></div>
+          <div class="cbook" style="left:39px;width:8px;height:22px;background:var(--cm)"></div>
+          <div class="cbook" style="left:54px;width:11px;height:15px;background:var(--ct)"></div>
+        </div>
+        <div class="plant-leaf" style="left:430px;top:324px;"></div><div class="plant-pot" style="left:428px;top:352px;"></div>
+        <div class="coffee-machine"></div>
+        <div class="plant-leaf"></div><div class="plant-pot"></div>
+        <div class="sofa">
+          <div class="sofa-arm-l"></div><div class="sofa-arm-r"></div>
+          <div class="sofa-back"></div><div class="sofa-seat"></div>
+        </div>
+        <div class="vending">
+          <div class="vending-window"></div>
+          <div class="vending-slot"></div>
+        </div>
+        <div class="meeting-table"></div>
+        <div class="chair face-down" style="left:516px;top:224px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-down" style="left:604px;top:224px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-up" style="left:516px;top:312px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-up" style="left:604px;top:312px;"><div class="back"></div><div class="seat"></div></div>
+        <!-- desks injected by JS -->
       </div>
-      <div class="meeting-table"></div>
-      <div class="chair face-down" style="left:516px;top:224px;"><div class="back"></div><div class="seat"></div></div>
-      <div class="chair face-down" style="left:604px;top:224px;"><div class="back"></div><div class="seat"></div></div>
-      <div class="chair face-up" style="left:516px;top:312px;"><div class="back"></div><div class="seat"></div></div>
-      <div class="chair face-up" style="left:604px;top:312px;"><div class="back"></div><div class="seat"></div></div>
-      <!-- desks injected by JS -->
     </div>
     <div class="legend" id="legend"></div>
   </div>
