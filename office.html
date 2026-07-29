@@ -338,7 +338,6 @@ const PEOPLE = [
 ];
 const DESK_Y = 56;
 const STAND_Y = 130;
-const BREAK_BOUNDS = { x1: 40, x2: 200, y1: 210, y2: 360 };
 const CELEBRATE_SPOT = { x: 90, y: 260 };
 const SPEED = 60; // px/sec
 
@@ -524,7 +523,7 @@ function buildRoom() {
     personEl.className = 'person state-idle';
     personEl.innerHTML = `
       <div class="person-inner">
-        <span class="mood-icon">💤</span>
+        <span class="mood-icon">🥱</span>
         ${charSVG(p.color, p.female, p.suit)}
         <span class="sparkle sparkle-1">✨</span>
         <span class="sparkle sparkle-2">🎉</span>
@@ -553,22 +552,14 @@ function buildRoom() {
       x: p.deskX, y: STAND_Y,
       targetX: p.deskX, targetY: STAND_Y,
       mood: 'idle',
-      wanderUntil: 0,
       celebrateUntil: 0,
       prevCount: 0,
       inMeeting: false,
       meetingSeat: null,
-      taskIcon: '💤',
+      taskIcon: '🥱',
       taskStatusText: 'のんびり中'
     };
   });
-}
-
-function pickWanderTarget() {
-  return {
-    x: BREAK_BOUNDS.x1 + Math.random() * (BREAK_BOUNDS.x2 - BREAK_BOUNDS.x1),
-    y: BREAK_BOUNDS.y1 + Math.random() * (BREAK_BOUNDS.y2 - BREAK_BOUNDS.y1)
-  };
 }
 
 function applyData(tasks) {
@@ -580,7 +571,7 @@ function applyData(tasks) {
     const overdue = mine.filter(t => t.due && t.due < today());
     const upcoming = mine.filter(t => t.due).sort((a, b) => a.due.localeCompare(b.due))[0];
 
-    let mood = 'idle', statusText = 'のんびり中', icon = '💤';
+    let mood = 'idle', statusText = 'のんびり中', icon = '🥱';
     if (overdue.length) { mood = 'overdue'; statusText = '期限切れ対応中…！'; icon = '😰'; }
     else if (mine.length) { mood = 'working'; statusText = '作業中'; icon = '⌨️'; }
 
@@ -673,22 +664,12 @@ function tick(ts) {
 
     if (c.celebrateUntil && now > c.celebrateUntil) {
       c.celebrateUntil = 0;
-      c.wanderUntil = 0; // force recompute of resting target below
     }
 
     if (!c.celebrateUntil) {
       if (c.inMeeting) {
         const seat = c.meetingSeat != null ? MEETING_SEATS[c.meetingSeat] : { x: 572, y: 300 };
         c.targetX = seat.x; c.targetY = seat.y;
-      } else if (c.mood === 'idle') {
-        if (now > c.wanderUntil) {
-          const dist = Math.hypot(c.x - c.targetX, c.y - c.targetY);
-          if (dist < 3) {
-            const target = Math.random() < 0.5 ? pickWanderTarget() : { x: p.deskX, y: STAND_Y };
-            c.targetX = target.x; c.targetY = target.y;
-            c.wanderUntil = now + 1800 + Math.random() * 2200;
-          }
-        }
       } else {
         c.targetX = p.deskX; c.targetY = STAND_Y;
       }
