@@ -97,7 +97,7 @@ body{
 .vending .vending-slot{position:absolute;left:6px;right:6px;bottom:6px;height:10px;background:#0F2A9E;border-radius:2px}
 
 /* ---- character sprite ---- */
-.person{position:absolute;width:52px;height:80px;transform:translate(-50%,-100%);z-index:5}
+.person{position:absolute;width:52px;height:80px;transform:translate(-50%,-100%);z-index:5;cursor:pointer}
 .person-inner{position:relative;width:100%;height:100%}
 .mood-icon{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:14px;opacity:0;transition:opacity .2s}
 .mood-icon.show{opacity:1}
@@ -133,7 +133,7 @@ body{
 
 /* ---- legend / status strip ---- */
 .legend{display:flex;justify-content:space-around;gap:8px;margin-top:16px;flex-wrap:wrap}
-.legend-item{text-align:center;flex:1;min-width:130px}
+.legend-item{text-align:center;flex:1;min-width:130px;cursor:pointer}
 .legend-role{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);color:var(--role-color,var(--text3));background:var(--surface2);padding:1px 8px;border-radius:20px;letter-spacing:.04em}
 .legend-name{font-size:13px;font-weight:600;margin-top:4px}
 .legend-status{font-size:11.5px;color:var(--text2);margin-top:2px;min-height:15px}
@@ -144,6 +144,29 @@ body{
 .badge-due.over{background:#FDEAED;color:#C0253A}
 .badge-due.today{background:#FEF4E3;color:#A05C00}
 .badge-ok{background:#E8F5EE;color:#1A7A50}
+
+/* ---- person detail modal ---- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(2px)}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--r16);box-shadow:0 12px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08);width:400px;max-width:92vw;padding:22px;transform:translateY(8px) scale(.98);transition:transform .18s;max-height:82vh;overflow-y:auto}
+.overlay.open .modal{transform:none}
+.dh{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.dh-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0}
+.dh-info{flex:1;min-width:0}
+.dh-name{font-size:16px;font-weight:600}
+.dh-role{font-size:11px;color:var(--text3);font-weight:600;font-family:var(--mono)}
+.dc{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
+.dh-status{font-size:12.5px;color:var(--text2);margin-bottom:16px;padding:9px 12px;background:var(--surface2);border-radius:var(--r8)}
+.dlbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px}
+.task-row{padding:9px 11px;background:var(--surface2);border-radius:var(--r8);margin-bottom:7px}
+.task-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.task-name{font-size:13px;font-weight:600}
+.task-memo{font-size:11.5px;color:var(--text2);line-height:1.5;margin-top:4px}
+.empty-tasks{font-size:12.5px;color:var(--text3);text-align:center;padding:22px 0}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.btn{border:none;border-radius:var(--r8);padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:none;display:inline-flex;align-items:center}
+.btn-ghost{background:var(--surface2);color:var(--text2)}
+.btn-primary{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -182,6 +205,26 @@ body{
       <!-- desks injected by JS -->
     </div>
     <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div class="overlay" id="person-modal" onclick="if(event.target===this)closePersonModal()">
+  <div class="modal">
+    <div class="dh">
+      <div class="dh-avatar" id="pm-avatar"></div>
+      <div class="dh-info">
+        <div class="dh-name" id="pm-name"></div>
+        <div class="dh-role" id="pm-role"></div>
+      </div>
+      <button class="dc" onclick="closePersonModal()">✕</button>
+    </div>
+    <div class="dh-status" id="pm-status"></div>
+    <div class="dlbl">タスク一覧</div>
+    <div id="pm-tasks"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePersonModal()">閉じる</button>
+      <a class="btn btn-primary" href="tasks.html">タスク管理を開く →</a>
+    </div>
   </div>
 </div>
 
@@ -262,6 +305,58 @@ function charSVG(color, isFemale, isSuit) {
 }
 
 const chars = {};
+let allTasks = [];
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function priorityIcon(pr) {
+  return pr === 'high' ? '🔴 ' : pr === 'mid' ? '🟡 ' : pr === 'low' ? '🟢 ' : '';
+}
+
+function openPersonModal(key) {
+  const p = PEOPLE.find(x => x.key === key);
+  const mine = allTasks.filter(t => t.assignee === key);
+  const overdue = mine.filter(t => t.due && t.due < today());
+
+  document.getElementById('pm-avatar').textContent = p.ch;
+  document.getElementById('pm-avatar').style.background = p.color;
+  document.getElementById('pm-name').textContent = p.key;
+  document.getElementById('pm-role').textContent = p.role;
+  document.getElementById('pm-status').textContent =
+    overdue.length ? `⚠️ 期限切れのタスクが${overdue.length}件あります` :
+    mine.length ? `${mine.length}件のタスクに対応中です` :
+    'タスクはありません。のんびり中です';
+
+  const sorted = mine.slice().sort((a, b) => {
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due.localeCompare(b.due);
+  });
+  const list = document.getElementById('pm-tasks');
+  list.innerHTML = sorted.length ? sorted.map(t => {
+    const due = t.due ? fmtDue(t.due) : null;
+    return `<div class="task-row">
+      <div class="task-row-top">
+        <div class="task-name">${priorityIcon(t.priority)}${escHtml(t.name || '')}</div>
+        ${due ? `<span class="badge badge-due ${due.cls}">📅 ${due.label}</span>` : ''}
+      </div>
+      ${t.memo ? `<div class="task-memo">${escHtml(t.memo)}</div>` : ''}
+    </div>`;
+  }).join('') : `<div class="empty-tasks">タスクはありません</div>`;
+
+  document.getElementById('person-modal').classList.add('open');
+}
+
+function closePersonModal() {
+  document.getElementById('person-modal').classList.remove('open');
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePersonModal();
+});
 
 function buildRoom() {
   const room = document.getElementById('room');
@@ -287,6 +382,7 @@ function buildRoom() {
         <span class="name-tag">${p.key}</span>
       </div>
     `;
+    personEl.addEventListener('click', () => openPersonModal(p.key));
     room.appendChild(personEl);
 
     const legendEl = document.createElement('div');
@@ -297,6 +393,7 @@ function buildRoom() {
       <div class="legend-status"></div>
       <div class="legend-badges"></div>
     `;
+    legendEl.addEventListener('click', () => openPersonModal(p.key));
     legend.appendChild(legendEl);
 
     chars[p.key] = {
@@ -321,6 +418,7 @@ function pickWanderTarget() {
 }
 
 function applyData(tasks) {
+  allTasks = tasks;
   const now = Date.now();
   PEOPLE.forEach(p => {
     const c = chars[p.key];
