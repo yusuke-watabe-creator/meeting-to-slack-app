@@ -33,6 +33,7 @@ window.dispatchEvent(new Event("fb-ready"));
   --font:"Instrument Sans",sans-serif;--mono:monospace;
   --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ct:#6B35C8;
   --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+  --floor:#E4DCC8;--floor2:#DCD3BC;--wood:#C9A876;--wood2:#BE9A63;
 }
 body{
   font-family:var(--font);color:var(--text);min-height:100vh;font-size:14px;
@@ -47,59 +48,87 @@ body{
 .brand-name{font-size:15px;font-weight:600}
 .nav-link{font-size:13px;color:var(--accent);text-decoration:none}
 .wrap{max-width:960px;margin:0 auto;padding:28px 20px}
-.subtitle{font-size:13px;color:var(--text2);margin-bottom:20px}
-.office{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:24px 20px 16px}
-.seats{display:flex;justify-content:space-around;align-items:flex-end;gap:8px}
-.island-table{height:14px;background:#D8D4C8;border-radius:7px;box-shadow:0 2px 0 rgba(0,0,0,.05);margin:0 4px 10px}
-.office-info{display:flex;justify-content:space-around;gap:8px}
-.desk{text-align:center;position:relative;overflow:visible;flex:1;max-width:200px}
-.char-wrap{position:relative;height:120px;display:flex;align-items:flex-end;justify-content:center}
-.char{overflow:visible}
-.desk-role{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);color:var(--role-color,var(--text3));background:var(--role-bg,var(--surface2));padding:1px 8px;border-radius:20px;letter-spacing:.04em}
-.desk-name{font-size:14px;font-weight:600;margin-top:6px}
-.desk-status{font-size:12px;color:var(--text2);margin-top:2px;min-height:16px}
-.desk-badges{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-.badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;font-family:var(--mono)}
+.stage-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:16px;overflow-x:auto}
+
+/* ---- room ---- */
+.room{
+  position:relative;width:700px;height:420px;margin:0 auto;border-radius:var(--r12);overflow:hidden;
+  background-image:
+    linear-gradient(90deg, rgba(0,0,0,.025) 1px, transparent 1px),
+    linear-gradient(rgba(0,0,0,.025) 1px, transparent 1px);
+  background-size:20px 20px;
+  background-color:var(--floor);
+  border:2px solid var(--border2);
+}
+.zone{position:absolute;border-radius:10px;display:flex;flex-direction:column}
+.zone-label{position:absolute;top:6px;left:10px;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;z-index:2}
+.zone-break{left:16px;top:170px;width:210px;height:220px;background:#EAF3DE;border:2px dashed #C3D9A0}
+.zone-meeting{left:460px;top:170px;width:224px;height:220px;background:#EEF0FC;border:2px dashed #C3CCF2}
+
+/* desks (fixed furniture, top row) */
+.furniture-desk{position:absolute;top:56px;width:96px;height:34px}
+.furniture-desk .surface{position:absolute;inset:0;background:#D8D4C8;border-radius:5px;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.furniture-desk .monitor{position:absolute;left:32px;top:-16px;width:32px;height:20px;background:#4b5563;border-radius:3px}
+.furniture-desk .monitor::after{content:"";position:absolute;left:12px;bottom:-6px;width:8px;height:6px;background:#4b5563}
+.furniture-desk .label{position:absolute;left:0;right:0;top:40px;text-align:center;font-size:10px;font-weight:700;color:var(--text3)}
+
+/* meeting table */
+.meeting-table{position:absolute;left:508px;top:250px;width:130px;height:60px;background:var(--wood);border:3px solid var(--wood2);border-radius:14px}
+
+/* break furniture */
+.coffee-machine{position:absolute;left:36px;top:200px;width:34px;height:44px;background:#6b7280;border-radius:6px 6px 3px 3px}
+.coffee-machine::before{content:"";position:absolute;left:8px;top:-6px;width:18px;height:8px;background:#4b5563;border-radius:3px 3px 0 0}
+.plant-pot{position:absolute;left:170px;top:290px;width:28px;height:22px;background:#A05C00;border-radius:4px 4px 8px 8px}
+.plant-leaf{position:absolute;left:172px;top:262px;width:24px;height:30px;background:#3B6D11;border-radius:60% 40% 60% 40%}
+
+/* ---- character sprite ---- */
+.person{position:absolute;width:52px;height:80px;transform:translate(-50%,-100%);z-index:5}
+.person-inner{position:relative;width:100%;height:100%}
+.mood-icon{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:14px;opacity:0;transition:opacity .2s}
+.mood-icon.show{opacity:1}
+.name-tag{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:700;color:var(--text2);background:rgba(255,255,255,.85);padding:0px 5px;border-radius:8px;white-space:nowrap}
+.char{overflow:visible;display:block}
+.facing-left .char{transform:scaleX(-1)}
+.leg{transform-origin:top center}
+@keyframes walkLeg{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.walking .leg-l{animation:walkLeg .38s ease-in-out infinite}
+.walking .leg-r{animation:walkLeg .38s ease-in-out infinite .19s}
+@keyframes bodyBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.walking .body-grp{animation:bodyBob .38s ease-in-out infinite}
+.state-idle:not(.walking) .body-grp{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-2px) rotate(-2deg)}75%{transform:translateX(2px) rotate(2deg)}}
+.state-overdue:not(.walking) .body-grp{animation:shake .35s ease-in-out infinite}
+@keyframes sweatDrip{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
+.state-overdue .sweat{animation:sweatDrip 1.1s ease-in infinite}
+.sweat{opacity:0}
+.mouth{display:none}
+.state-idle .mouth-neutral,.state-working .mouth-happy,.state-overdue .mouth-worried{display:block}
+.brow{display:none}
+.state-overdue .brow{display:block}
+
+@keyframes celebrate{0%{transform:scale(1)}30%{transform:scale(1.18)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+@keyframes sparklePop{0%{opacity:0;transform:translateY(6px) scale(.4)}30%{opacity:1;transform:translateY(-10px) scale(1)}100%{opacity:0;transform:translateY(-26px) scale(.6)}}
+.celebrating .body-grp{animation:celebrate .6s ease}
+.sparkle{position:absolute;font-size:18px;opacity:0;pointer-events:none}
+.celebrating .sparkle{animation:sparklePop .9s ease}
+.sparkle-1{left:2px;top:6px}
+.sparkle-2{left:20px;top:-4px}
+.sparkle-3{left:38px;top:6px}
+
+/* ---- legend / status strip ---- */
+.legend{display:flex;justify-content:space-around;gap:8px;margin-top:16px;flex-wrap:wrap}
+.legend-item{text-align:center;flex:1;min-width:130px}
+.legend-role{display:inline-block;font-size:10px;font-weight:700;font-family:var(--mono);color:var(--role-color,var(--text3));background:var(--surface2);padding:1px 8px;border-radius:20px;letter-spacing:.04em}
+.legend-name{font-size:13px;font-weight:600;margin-top:4px}
+.legend-status{font-size:11.5px;color:var(--text2);margin-top:2px;min-height:15px}
+.legend-badges{display:flex;gap:6px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.badge{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:var(--mono)}
 .badge-count{background:var(--surface2);color:var(--text2)}
 .badge-due{background:#FEF4E3;color:#A05C00}
 .badge-due.over{background:#FDEAED;color:#C0253A}
 .badge-due.today{background:#FEF4E3;color:#A05C00}
 .badge-ok{background:#E8F5EE;color:#1A7A50}
-
-/* ---- idle: gentle bob ---- */
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-.state-idle .char{animation:bob 2.6s ease-in-out infinite}
-
-/* ---- working: typing arms ---- */
-@keyframes typeArmL{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(3px) rotate(-8deg)}}
-@keyframes typeArmR{0%,100%{transform:translateY(3px) rotate(8deg)}50%{transform:translateY(0) rotate(0)}}
-.state-working .char{animation:bob 1.6s ease-in-out infinite}
-.state-working .arm-l{animation:typeArmL .5s ease-in-out infinite;transform-origin:60px 88px}
-.state-working .arm-r{animation:typeArmR .5s ease-in-out infinite;transform-origin:60px 88px}
-
-/* ---- overdue: worried shake + sweat ---- */
-@keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-2px) rotate(-2deg)}75%{transform:translateX(2px) rotate(2deg)}}
-@keyframes sweatDrip{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
-.state-overdue .char{animation:shake .35s ease-in-out infinite}
-.state-overdue .sweat{animation:sweatDrip 1.1s ease-in infinite}
-
-.mouth{display:none}
-.state-idle .mouth-neutral,
-.state-working .mouth-happy,
-.state-overdue .mouth-worried{display:block}
-.brow{display:none}
-.state-overdue .brow{display:block}
-.sweat{opacity:0}
-
-/* ---- celebrate burst on task completion ---- */
-@keyframes celebrate{0%{transform:scale(1)}30%{transform:scale(1.18)}60%{transform:scale(.95)}100%{transform:scale(1)}}
-@keyframes sparklePop{0%{opacity:0;transform:translateY(6px) scale(.4)}30%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-18px) scale(.6)}}
-.desk.celebrating .char{animation:celebrate .6s ease}
-.sparkle{position:absolute;font-size:20px;opacity:0;pointer-events:none}
-.desk.celebrating .sparkle{animation:sparklePop .9s ease}
-.sparkle-1{left:20%;top:10px}
-.sparkle-2{left:50%;top:0px}
-.sparkle-3{left:75%;top:14px}
 </style>
 </head>
 <body>
@@ -116,21 +145,32 @@ body{
 </div>
 
 <div class="wrap">
-  <div class="office">
-    <div class="seats" id="office-seats"></div>
-    <div class="island-table"></div>
-    <div class="office-info" id="office-info"></div>
+  <div class="stage-card">
+    <div class="room" id="room">
+      <div class="zone zone-break"><span class="zone-label">休憩スペース</span></div>
+      <div class="zone zone-meeting"><span class="zone-label">会議室</span></div>
+      <div class="coffee-machine"></div>
+      <div class="plant-leaf"></div><div class="plant-pot"></div>
+      <div class="meeting-table"></div>
+      <!-- desks injected by JS -->
+    </div>
+    <div class="legend" id="legend"></div>
   </div>
 </div>
 
 <script>
-// 渡部が一番端（左端）の島型座席。太田さんは女性キャラクター。
+// 渡部が一番端（左端の席）。太田さんは女性キャラクター。
 const PEOPLE = [
-  { key: '渡部', color: 'var(--cn)', ch: '渡', role: 'FS' },
-  { key: '横井', color: 'var(--cm)', ch: '横', role: 'IS' },
-  { key: '上浦', color: 'var(--cs)', ch: '上', role: 'IS' },
-  { key: '太田', color: 'var(--ct)', ch: '太', female: true, role: 'IS' }
+  { key: '渡部', color: '#3A5EE5', ch: '渡', role: 'FS', deskX: 90 },
+  { key: '横井', color: '#1A7A50', ch: '横', role: 'IS', deskX: 260 },
+  { key: '上浦', color: '#C0253A', ch: '上', role: 'IS', deskX: 430 },
+  { key: '太田', color: '#6B35C8', ch: '太', role: 'IS', deskX: 600, female: true }
 ];
+const DESK_Y = 56;
+const STAND_Y = 130;
+const BREAK_BOUNDS = { x1: 40, x2: 200, y1: 210, y2: 360 };
+const CELEBRATE_SPOT = { x: 90, y: 260 };
+const SPEED = 60; // px/sec
 
 function today() { return new Date().toISOString().split('T')[0]; }
 
@@ -146,102 +186,181 @@ function fmtDue(s) {
 
 function charSVG(color, isFemale) {
   const longHair = isFemale ? `
-      <path d="M33,36 Q29,58 35,80 Q42,75 39,50 Z" fill="#2E2A26"/>
-      <path d="M87,36 Q91,58 85,80 Q78,75 81,50 Z" fill="#2E2A26"/>
+      <path d="M18,30 Q15,48 20,64 Q26,60 23,42 Z" fill="#2E2A26"/>
+      <path d="M42,30 Q45,48 40,64 Q34,60 37,42 Z" fill="#2E2A26"/>
   ` : '';
   const lashes = isFemale ? `
-      <path d="M47,41 l-3,-3" stroke="#2E2A26" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M73,41 l3,-3" stroke="#2E2A26" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M23,20 l-2,-2" stroke="#2E2A26" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M37,20 l2,-2" stroke="#2E2A26" stroke-width="1.3" stroke-linecap="round"/>
   ` : '';
   return `
-    <svg class="char" viewBox="0 0 120 140" width="120" height="120">
-      <ellipse cx="60" cy="128" rx="34" ry="6" fill="rgba(0,0,0,.06)"/>
-      <rect x="35" y="70" width="50" height="45" rx="18" fill="${color}"/>
-      <ellipse class="arm arm-l" cx="30" cy="92" rx="8" ry="14" fill="${color}"/>
-      <ellipse class="arm arm-r" cx="90" cy="92" rx="8" ry="14" fill="${color}"/>
-      ${longHair}
-      <circle cx="60" cy="45" r="26" fill="#FFDDBB"/>
-      <path d="M34,40 Q34,10 60,10 Q86,10 86,40 Q86,26 60,24 Q34,26 34,40 Z" fill="#2E2A26"/>
-      <path class="brow brow-l" d="M46,34 q4,-4 9,-2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <path class="brow brow-r" d="M65,32 q5,-2 9,2" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <circle cx="50" cy="44" r="3" fill="#2E2A26"/>
-      <circle cx="70" cy="44" r="3" fill="#2E2A26"/>
-      ${lashes}
-      <path class="mouth mouth-neutral" d="M52,56 L68,56" stroke="#2E2A26" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <path class="mouth mouth-happy" d="M50,54 Q60,63 70,54" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <path class="mouth mouth-worried" d="M50,60 Q60,52 70,60" stroke="#2E2A26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <path class="sweat" d="M80,28 q5,9 0,13 q-5,-4 0,-13 z" fill="#7cc4ff"/>
-      <rect x="44" y="100" width="32" height="14" rx="2" fill="#4b5563"/>
+    <svg class="char" viewBox="0 0 60 90" width="52" height="80">
+      <ellipse cx="30" cy="86" rx="15" ry="3" fill="rgba(0,0,0,.14)"/>
+      <rect class="leg leg-l" x="19" y="58" width="8" height="22" rx="3" fill="#3f3a35"/>
+      <rect class="leg leg-r" x="33" y="58" width="8" height="22" rx="3" fill="#3f3a35"/>
+      <g class="body-grp">
+        <rect x="14" y="30" width="32" height="32" rx="12" fill="${color}"/>
+        <ellipse class="arm arm-l" cx="11" cy="42" rx="5" ry="9" fill="${color}"/>
+        <ellipse class="arm arm-r" cx="49" cy="42" rx="5" ry="9" fill="${color}"/>
+        ${longHair}
+        <circle cx="30" cy="17" r="13" fill="#FFDDBB"/>
+        <path d="M17,15 Q17,2 30,2 Q43,2 43,15 Q43,8 30,7 Q17,8 17,15 Z" fill="#2E2A26"/>
+        <path class="brow brow-l" d="M22,13 q2,-2 5,-1" stroke="#2E2A26" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <path class="brow brow-r" d="M33,12 q3,-1 5,1" stroke="#2E2A26" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <circle cx="25" cy="17" r="1.6" fill="#2E2A26"/>
+        <circle cx="35" cy="17" r="1.6" fill="#2E2A26"/>
+        ${lashes}
+        <path class="mouth mouth-neutral" d="M26,23 L34,23" stroke="#2E2A26" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <path class="mouth mouth-happy" d="M25,22 Q30,27 35,22" stroke="#2E2A26" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path class="mouth mouth-worried" d="M25,26 Q30,21 35,26" stroke="#2E2A26" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path class="sweat" d="M41,6 q4,7 0,10 q-4,-3 0,-10 z" fill="#7cc4ff"/>
+      </g>
     </svg>
   `;
 }
 
-function render(tasks) {
-  const seatsEl = document.getElementById('office-seats');
-  const infoEl = document.getElementById('office-info');
+const chars = {};
+
+function buildRoom() {
+  const room = document.getElementById('room');
+  const legend = document.getElementById('legend');
+
   PEOPLE.forEach(p => {
+    const deskEl = document.createElement('div');
+    deskEl.className = 'furniture-desk';
+    deskEl.style.left = (p.deskX - 48) + 'px';
+    deskEl.style.top = DESK_Y + 'px';
+    deskEl.innerHTML = `<div class="surface"></div><div class="monitor"></div><div class="label">${p.key}</div>`;
+    room.appendChild(deskEl);
+
+    const personEl = document.createElement('div');
+    personEl.className = 'person state-idle';
+    personEl.innerHTML = `
+      <div class="person-inner">
+        <span class="mood-icon">💤</span>
+        ${charSVG(p.color, p.female)}
+        <span class="sparkle sparkle-1">✨</span>
+        <span class="sparkle sparkle-2">🎉</span>
+        <span class="sparkle sparkle-3">✨</span>
+        <span class="name-tag">${p.key}</span>
+      </div>
+    `;
+    room.appendChild(personEl);
+
+    const legendEl = document.createElement('div');
+    legendEl.className = 'legend-item';
+    legendEl.innerHTML = `
+      <div class="legend-role" style="--role-color:${p.color};">${p.role}</div>
+      <div class="legend-name">${p.key}</div>
+      <div class="legend-status"></div>
+      <div class="legend-badges"></div>
+    `;
+    legend.appendChild(legendEl);
+
+    chars[p.key] = {
+      def: p,
+      el: personEl,
+      legendEl,
+      x: p.deskX, y: STAND_Y,
+      targetX: p.deskX, targetY: STAND_Y,
+      mood: 'idle',
+      wanderUntil: 0,
+      celebrateUntil: 0,
+      prevCount: 0
+    };
+  });
+}
+
+function pickWanderTarget() {
+  return {
+    x: BREAK_BOUNDS.x1 + Math.random() * (BREAK_BOUNDS.x2 - BREAK_BOUNDS.x1),
+    y: BREAK_BOUNDS.y1 + Math.random() * (BREAK_BOUNDS.y2 - BREAK_BOUNDS.y1)
+  };
+}
+
+function applyData(tasks) {
+  const now = Date.now();
+  PEOPLE.forEach(p => {
+    const c = chars[p.key];
     const mine = tasks.filter(t => t.assignee === p.key);
     const overdue = mine.filter(t => t.due && t.due < today());
-    const upcoming = mine
-      .filter(t => t.due)
-      .sort((a, b) => a.due.localeCompare(b.due))[0];
+    const upcoming = mine.filter(t => t.due).sort((a, b) => a.due.localeCompare(b.due))[0];
 
-    let state = 'idle';
-    let statusText = 'のんびり中';
-    if (overdue.length) { state = 'overdue'; statusText = '期限切れ対応中…！'; }
-    else if (mine.length) { state = 'working'; statusText = '作業中'; }
+    let mood = 'idle', statusText = 'のんびり中', icon = '💤';
+    if (overdue.length) { mood = 'overdue'; statusText = '期限切れ対応中…！'; icon = '😰'; }
+    else if (mine.length) { mood = 'working'; statusText = '作業中'; icon = '⌨️'; }
 
-    let seatEl = document.getElementById('seat-' + p.key);
-    let infoDeskEl = document.getElementById('info-' + p.key);
-    const isNew = !seatEl;
-    if (isNew) {
-      seatEl = document.createElement('div');
-      seatEl.id = 'seat-' + p.key;
-      seatEl.className = 'desk';
-      seatEl.innerHTML = `
-        <div class="char-wrap">
-          ${charSVG(p.color, p.female)}
-          <span class="sparkle sparkle-1">✨</span>
-          <span class="sparkle sparkle-2">🎉</span>
-          <span class="sparkle sparkle-3">✨</span>
-        </div>
-      `;
-      seatsEl.appendChild(seatEl);
-
-      infoDeskEl = document.createElement('div');
-      infoDeskEl.id = 'info-' + p.key;
-      infoDeskEl.className = 'desk';
-      infoDeskEl.innerHTML = `
-        <div class="desk-role" style="--role-color:${p.color};">${p.role || ''}</div>
-        <div class="desk-name">${p.key}</div>
-        <div class="desk-status"></div>
-        <div class="desk-badges"></div>
-      `;
-      infoEl.appendChild(infoDeskEl);
-
-      seatEl.dataset.prevCount = String(mine.length);
+    if (mine.length < c.prevCount) {
+      c.celebrateUntil = now + 2600;
+      c.targetX = CELEBRATE_SPOT.x; c.targetY = CELEBRATE_SPOT.y;
     }
+    c.prevCount = mine.length;
+    c.mood = mood;
+    c.icon = icon;
 
-    const prevCount = Number(seatEl.dataset.prevCount || 0);
-    if (mine.length < prevCount) {
-      seatEl.classList.add('celebrating');
-      setTimeout(() => seatEl.classList.remove('celebrating'), 900);
-    }
-    seatEl.dataset.prevCount = String(mine.length);
-
-    seatEl.className = 'desk state-' + state + (seatEl.classList.contains('celebrating') ? ' celebrating' : '');
-    infoDeskEl.querySelector('.desk-status').textContent = statusText;
-
+    c.el.querySelector('.mood-icon').textContent = icon;
+    c.legendEl.querySelector('.legend-status').textContent = statusText;
     const due = upcoming ? fmtDue(upcoming.due) : null;
-    const badgesEl = infoDeskEl.querySelector('.desk-badges');
-    badgesEl.innerHTML =
+    c.legendEl.querySelector('.legend-badges').innerHTML =
       `<span class="badge badge-count">${mine.length}件</span>` +
       (mine.length === 0
         ? `<span class="badge badge-ok">タスクなし</span>`
-        : due
-          ? `<span class="badge badge-due ${due.cls}">📅 ${due.label}</span>`
-          : '');
+        : due ? `<span class="badge badge-due ${due.cls}">📅 ${due.label}</span>` : '');
   });
+}
+
+let lastTs = 0;
+function tick(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.1);
+  lastTs = ts;
+  const now = Date.now();
+
+  PEOPLE.forEach(p => {
+    const c = chars[p.key];
+
+    if (c.celebrateUntil && now > c.celebrateUntil) {
+      c.celebrateUntil = 0;
+      c.wanderUntil = 0; // force recompute of resting target below
+    }
+
+    if (!c.celebrateUntil) {
+      if (c.mood === 'idle') {
+        if (now > c.wanderUntil) {
+          const dist = Math.hypot(c.x - c.targetX, c.y - c.targetY);
+          if (dist < 3) {
+            const target = Math.random() < 0.5 ? pickWanderTarget() : { x: p.deskX, y: STAND_Y };
+            c.targetX = target.x; c.targetY = target.y;
+            c.wanderUntil = now + 1800 + Math.random() * 2200;
+          }
+        }
+      } else {
+        c.targetX = p.deskX; c.targetY = STAND_Y;
+      }
+    }
+
+    const dx = c.targetX - c.x, dy = c.targetY - c.y;
+    const dist = Math.hypot(dx, dy);
+    const walking = dist > 2;
+    if (walking) {
+      const step = SPEED * dt;
+      if (step >= dist) { c.x = c.targetX; c.y = c.targetY; }
+      else { c.x += (dx / dist) * step; c.y += (dy / dist) * step; }
+    }
+
+    c.el.style.left = c.x + 'px';
+    c.el.style.top = c.y + 'px';
+    c.el.classList.toggle('walking', walking);
+    if (dx < -1) c.el.classList.add('facing-left');
+    else if (dx > 1) c.el.classList.remove('facing-left');
+    c.el.classList.toggle('celebrating', !!c.celebrateUntil);
+    c.el.className = c.el.className.replace(/state-\S+/g, '').trim();
+    c.el.classList.add('state-' + c.mood);
+    const moodIcon = c.el.querySelector('.mood-icon');
+    moodIcon.classList.toggle('show', !walking && !c.celebrateUntil);
+  });
+
+  requestAnimationFrame(tick);
 }
 
 function initFirebase() {
@@ -249,9 +368,12 @@ function initFirebase() {
   onValue(ref(db, 'team2/tasks'), snap => {
     const val = snap.val();
     const tasks = val ? Object.values(val) : [];
-    render(tasks);
+    applyData(tasks);
   });
 }
+
+buildRoom();
+requestAnimationFrame(tick);
 if (window._fbReady) initFirebase();
 else window.addEventListener('fb-ready', initFirebase);
 </script>
