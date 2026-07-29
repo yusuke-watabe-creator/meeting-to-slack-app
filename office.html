@@ -208,6 +208,21 @@ body{
 .dc{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
 .dh-status{font-size:12.5px;color:var(--text2);margin-bottom:16px;padding:9px 12px;background:var(--surface2);border-radius:var(--r8)}
 .dlbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px}
+
+/* ---- sales progress ---- */
+.sales-summary{margin:0 0 14px;padding:12px 14px;background:var(--surface2);border-radius:var(--r12)}
+.sales-summary-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:7px}
+.sales-summary-bar{height:10px;border-radius:20px;background:var(--border);overflow:hidden}
+.sales-summary-fill{height:100%;background:linear-gradient(90deg,#3A5EE5,#6B8CFF);border-radius:20px;transition:width .4s ease;width:0%}
+.sales-summary-text{font-size:12px;color:var(--text2);margin-top:7px}
+.sales-summary-text .num{font-family:var(--mono);font-weight:700;color:var(--text)}
+.legend-sales{margin-top:8px}
+.sales-bar{height:6px;border-radius:10px;background:var(--border);overflow:hidden}
+.sales-fill{height:100%;background:linear-gradient(90deg,#3A5EE5,#6B8CFF);border-radius:10px;transition:width .4s ease;width:0%}
+.sales-fill.over{background:linear-gradient(90deg,#1A7A50,#2FBE7E)}
+.sales-text{font-size:10.5px;color:var(--text2);margin-top:3px}
+.sales-detail{font-size:13px;color:var(--text2);background:var(--surface2);border-radius:var(--r8);padding:9px 12px;margin-bottom:8px}
+.sales-detail b{color:var(--text);font-family:var(--mono)}
 .task-row{padding:9px 11px;background:var(--surface2);border-radius:var(--r8);margin-bottom:7px}
 .task-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .task-name{font-size:13px;font-weight:600}
@@ -286,6 +301,11 @@ body{
 
 <div class="wrap">
   <div class="stage-card">
+    <div class="sales-summary">
+      <div class="sales-summary-label">📈 今月の売上進捗(会社全体)</div>
+      <div class="sales-summary-bar"><div class="sales-summary-fill" id="sales-summary-fill"></div></div>
+      <div class="sales-summary-text" id="sales-summary-text">読み込み中…</div>
+    </div>
     <div class="room-scene">
       <div class="wall-back">
         <div class="ceiling-light" style="left:180px;"></div>
@@ -422,6 +442,15 @@ body{
       <button class="dc" onclick="closePersonModal()">✕</button>
     </div>
     <div class="dh-status" id="pm-status"></div>
+
+    <div class="dlbl">売上目標</div>
+    <div class="sales-detail" id="sales-detail"></div>
+    <div class="qa-row" style="margin-bottom:16px">
+      <input type="number" class="qinp" id="sales-target-input" placeholder="目標(万円)">
+      <input type="number" class="qinp" id="sales-current-input" placeholder="実績(万円)">
+      <button class="btn btn-primary" style="flex-shrink:0" onclick="saveSales()">更新</button>
+    </div>
+
     <div class="dlbl">タスク一覧</div>
     <div id="pm-tasks"></div>
 
@@ -568,6 +597,15 @@ function openPersonModal(key) {
   document.getElementById('pm-status').textContent =
     c && c.inMeeting ? `📅 現在、会議中です` : taskStatus;
 
+  const s = salesData[key] || {};
+  const target = s.target || 0, current = s.current || 0;
+  const remain = Math.max(0, target - current);
+  document.getElementById('sales-detail').innerHTML = target > 0
+    ? `目標 <b>${fmtMan(target)}</b>　実績 <b>${fmtMan(current)}</b>　残り <b>${fmtMan(remain)}</b>`
+    : '目標が未設定です';
+  document.getElementById('sales-target-input').value = target || '';
+  document.getElementById('sales-current-input').value = current || '';
+
   const sorted = mine.slice().sort((a, b) => {
     if (!a.due && !b.due) return 0;
     if (!a.due) return 1;
@@ -588,6 +626,61 @@ function openPersonModal(key) {
   }).join('') : `<div class="empty-tasks">タスクはありません</div>`;
 
   document.getElementById('person-modal').classList.add('open');
+}
+
+let salesData = {};
+
+function fmtMan(n) {
+  return Math.round(n || 0).toLocaleString('ja-JP') + '万円';
+}
+
+function fbSetSales(key, data) {
+  const { db, ref, set } = window._fb;
+  set(ref(db, 'team2/sales/' + key), data);
+}
+
+function renderSalesUI() {
+  let totalTarget = 0, totalCurrent = 0;
+  PEOPLE.forEach(p => {
+    const s = salesData[p.key] || {};
+    const target = s.target || 0, current = s.current || 0;
+    totalTarget += target;
+    totalCurrent += current;
+    const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+    const remain = Math.max(0, target - current);
+    const c = chars[p.key];
+    if (!c) return;
+    if (c.salesFillEl) {
+      c.salesFillEl.style.width = pct + '%';
+      c.salesFillEl.classList.toggle('over', target > 0 && current >= target);
+    }
+    if (c.salesTextEl) {
+      c.salesTextEl.textContent = target > 0 ? `残り ${fmtMan(remain)}` : '目標未設定';
+    }
+  });
+  const totalPct = totalTarget > 0 ? Math.min(100, Math.round((totalCurrent / totalTarget) * 100)) : 0;
+  const totalRemain = Math.max(0, totalTarget - totalCurrent);
+  document.getElementById('sales-summary-fill').style.width = totalPct + '%';
+  document.getElementById('sales-summary-text').innerHTML = totalTarget > 0
+    ? `目標 <span class="num">${fmtMan(totalTarget)}</span>　実績 <span class="num">${fmtMan(totalCurrent)}</span>　残り <span class="num">${fmtMan(totalRemain)}</span>（${totalPct}%）`
+    : 'まだ目標が設定されていません';
+}
+
+function saveSales() {
+  const target = Number(document.getElementById('sales-target-input').value) || 0;
+  const current = Number(document.getElementById('sales-current-input').value) || 0;
+  salesData[currentModalKey] = { target, current };
+  fbSetSales(currentModalKey, { target, current });
+  renderSalesUI();
+  openPersonModal(currentModalKey);
+}
+
+function initSales() {
+  const { db, ref, onValue } = window._fb;
+  onValue(ref(db, 'team2/sales'), snap => {
+    salesData = snap.val() || {};
+    renderSalesUI();
+  });
 }
 
 function closePersonModal() {
@@ -667,6 +760,10 @@ function buildRoom() {
       <div class="legend-name">${p.key}</div>
       <div class="legend-status"></div>
       <div class="legend-badges"></div>
+      <div class="legend-sales">
+        <div class="sales-bar"><div class="sales-fill"></div></div>
+        <div class="sales-text"></div>
+      </div>
     `;
     legendEl.addEventListener('click', () => openPersonModal(p.key));
     legend.appendChild(legendEl);
@@ -675,6 +772,8 @@ function buildRoom() {
       def: p,
       el: personEl,
       legendEl,
+      salesFillEl: legendEl.querySelector('.sales-fill'),
+      salesTextEl: legendEl.querySelector('.sales-text'),
       x: p.deskX, y: p.standY,
       targetX: p.deskX, targetY: p.standY,
       mood: 'idle',
@@ -872,8 +971,8 @@ function initWorkshop() {
 
 buildRoom();
 requestAnimationFrame(tick);
-if (window._fbReady) { initFirebase(); initWorkshop(); }
-else window.addEventListener('fb-ready', () => { initFirebase(); initWorkshop(); });
+if (window._fbReady) { initFirebase(); initWorkshop(); initSales(); }
+else window.addEventListener('fb-ready', () => { initFirebase(); initWorkshop(); initSales(); });
 </script>
 </body>
 </html>
