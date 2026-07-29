@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEO資料作成会社</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const cfg = {
+  apiKey: "AIzaSyC6hDHQhmq7VKoUKaOnDlBQFcscv__HYig",
+  authDomain: "taiki-tasks-933cc.firebaseapp.com",
+  databaseURL: "https://taiki-tasks-933cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "taiki-tasks-933cc",
+  storageBucket: "taiki-tasks-933cc.firebasestorage.app",
+  messagingSenderId: "679381676234",
+  appId: "1:679381676234:web:20b54086cd302494c0c433"
+};
+const app = initializeApp(cfg);
+const db = getDatabase(app);
+window._fb = { db, ref, set, remove, onValue };
+window._fbReady = true;
+window.dispatchEvent(new Event("fb-ready"));
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0EFE9;--surface:#FFF;--surface2:#EFEDE6;
+  --border:#E2DFD6;--border2:#C9C6BC;
+  --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
+  --accent:#3A5EE5;--accent-bg:#EDF0FC;
+  --green:#1A7A50;--green-bg:#E8F5EE;
+  --amber:#A05C00;--amber-bg:#FEF4E3;
+  --red:#C0253A;--red-bg:#FDEAED;
+  --r8:8px;--r12:12px;--r16:16px;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
+  --font:"Instrument Sans",sans-serif;--mono:monospace;
+  --cn:#3A5EE5;--cm:#1A7A50;--cs:#C0253A;--ct:#6B35C8;
+}
+body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#fdeee0 0%,var(--bg) 32%),radial-gradient(circle at 100% 0%,#e6ebfb 0%,var(--bg) 32%),var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-icon{width:28px;height:28px;background:#B4690E;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.brand-name{font-size:15px;font-weight:600}
+.brand-sub{font-size:11.5px;color:var(--text3)}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r8);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .14s;text-decoration:none}
+.btn-primary{background:#B4690E;color:#fff}.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:none;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{background:none;color:var(--red);border:1px solid #f5c6cc}.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn svg{width:13px;height:13px}
+.stats-bar{padding:10px 20px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.stat{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);padding:5px 11px 5px 8px;border-radius:20px;background:var(--stat-bg,var(--surface2))}
+.dot{width:8px;height:8px;border-radius:50%}
+.num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)}
+.sep{width:1px;height:16px;background:var(--border)}
+.search-bar{padding:12px 20px 0}
+.search-inp{width:100%;max-width:360px;padding:9px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:13px;outline:none;background:var(--surface)}
+.search-inp:focus{border-color:#B4690E}
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 20px;align-items:start}
+.col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
+.col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
+.col-ordered .col-header{border-color:var(--cn);background:linear-gradient(135deg,#DCE3FA,#eef1fd)}
+.col-progress .col-header{border-color:var(--amber);background:linear-gradient(135deg,#FBE7C6,#fdf3e2)}
+.col-delivered .col-header{border-color:var(--green);background:linear-gradient(135deg,#D4EDE0,#e9f6ee)}
+.col-ordered .card{border-left:3px solid var(--cn)}
+.col-progress .card{border-left:3px solid var(--amber)}
+.col-delivered .card{border-left:3px solid var(--green)}
+.col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:700}
+.col-ordered .col-cnt{background:#c7d7ff;color:var(--cn)}
+.col-progress .col-cnt{background:#f5d9a3;color:var(--amber)}
+.col-delivered .col-cnt{background:#a7f3d0;color:var(--green)}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px}
+.empty{padding:24px 10px;text-align:center;color:var(--text3);font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r12);overflow:hidden;transition:box-shadow .14s,transform .14s;cursor:pointer;position:relative}
+.card:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.card-inner{padding:10px 12px}
+.card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+.card-name{font-size:13px;font-weight:600;flex:1;line-height:1.4}
+.card-memo{font-size:11.5px;color:var(--text2);margin-bottom:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:500}
+.tdue{background:var(--surface2);color:var(--text2)}
+.card-acts{position:absolute;top:7px;right:7px;display:flex;gap:3px;opacity:0;transition:opacity .13s}
+.card:hover .card-acts{opacity:1}
+.ib{width:24px;height:24px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
+.ib:hover{background:var(--border);color:var(--text2)}
+.ib.del:hover{background:var(--red-bg);color:var(--red)}
+.ib svg{width:12px;height:12px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(2px)}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--r16);box-shadow:var(--shadow-lg);width:460px;max-width:95vw;padding:22px;transform:translateY(8px) scale(.98);transition:transform .18s;max-height:92vh;overflow-y:auto}
+.overlay.open .modal{transform:none}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:18px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.form-row{margin-bottom:13px}
+.lbl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.inp{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);outline:none;transition:border-color .14s}
+.inp:focus{border-color:#B4690E}
+.inp::placeholder{color:var(--text3)}
+textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
+.sel-w{position:relative}
+.sel-w select{width:100%;padding:9px 28px 9px 11px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:13.5px;color:var(--text);background:var(--surface);appearance:none;cursor:pointer;outline:none}
+.sel-w::after{content:"";position:absolute;right:10px;top:50%;transform:translateY(-50%);border:4px solid transparent;border-top-color:var(--text3);pointer-events:none}
+.dm{width:480px}
+.dh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.dn{font-size:17px;font-weight:600;line-height:1.4;flex:1}
+.dc{width:28px;height:28px;border-radius:var(--r8);border:none;background:var(--surface2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.dsec{border-top:1px solid var(--border);padding:14px 0}
+.dlbl{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:7px}
+.dmemo{font-size:14px;line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:var(--r8);padding:11px 13px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.di{background:var(--surface2);border-radius:var(--r8);padding:9px 11px}
+.dilbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}
+.dival{font-size:13px;font-weight:500}
+.dfile{display:flex;align-items:center;gap:10px;background:var(--green-bg);border-radius:var(--r8);padding:11px 13px}
+.dfile a{color:var(--green);font-weight:600;font-size:13px;text-decoration:none}
+.dfile a:hover{text-decoration:underline}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes si{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{animation:si .15s ease both}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">&#127970;</div>
+    <div>
+      <div class="brand-name">MEO資料作成会社</div>
+      <div class="brand-sub">株式会社渡部商事 下請け</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="index.html" class="btn btn-ghost btn-sm">← 商談メモ</a>
+    <a href="tasks.html" class="btn btn-ghost btn-sm">タスク管理</a>
+    <a href="office.html" class="btn btn-ghost btn-sm">バーチャルオフィス</a>
+    <button class="btn btn-primary" onclick="openAdd()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+      発注する
+    </button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat" style="--stat-bg:#e6ebfb"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="stAll">0</span> 件</div>
+  <div class="sep"></div>
+  <div class="stat" style="--stat-bg:#dce3fa"><span class="dot" style="background:var(--cn)"></span>受注 <span class="num" id="stOrdered">0</span></div>
+  <div class="stat" style="--stat-bg:#fbecd2"><span class="dot" style="background:var(--amber)"></span>作成中 <span class="num" id="stProgress">0</span></div>
+  <div class="stat" style="--stat-bg:#d4ede0"><span class="dot" style="background:var(--green)"></span>納品済み <span class="num" id="stDelivered">0</span></div>
+</div>
+
+<div class="search-bar">
+  <input type="text" class="search-inp" id="q" placeholder="🔍 案件名でアーカイブを検索" oninput="renderBoard()">
+</div>
+
+<div class="kanban" id="kanban">
+  <div class="col col-ordered">
+    <div class="col-header">
+      <div class="col-title">📥 受注</div>
+      <span class="col-cnt" id="cnt-ordered">0</span>
+    </div>
+    <div class="col-body" id="col-ordered"></div>
+  </div>
+  <div class="col col-progress">
+    <div class="col-header">
+      <div class="col-title">🛠️ 作成中</div>
+      <span class="col-cnt" id="cnt-progress">0</span>
+    </div>
+    <div class="col-body" id="col-progress"></div>
+  </div>
+  <div class="col col-delivered">
+    <div class="col-header">
+      <div class="col-title">✅ 納品済み（アーカイブ）</div>
+      <span class="col-cnt" id="cnt-delivered">0</span>
+    </div>
+    <div class="col-body" id="col-delivered"></div>
+  </div>
+</div>
+
+<!-- Order Modal -->
+<div class="overlay" id="order-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="mtitle">発注する</div>
+    <input type="hidden" id="eid">
+    <div class="form-row"><label class="lbl">案件名 <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="fn" placeholder="例：株式会社〇〇 MEO提案書"></div>
+    <div class="form-row"><label class="lbl">要望・メモ（任意）</label><textarea class="inp" id="fm" rows="3" placeholder="盛り込みたい内容、参考資料、納期の希望など"></textarea></div>
+    <div class="form-row"><label class="lbl">発注者</label><div class="sel-w"><select id="fa"><option value="">未定</option><option value="渡部">渡部</option><option value="横井">横井</option><option value="上浦">上浦</option><option value="太田">太田</option></select></div></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveOrderForm()">発注する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detail-modal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal dm">
+    <div class="dh">
+      <div class="dn" id="d-name"></div>
+      <button class="dc" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="tags" id="d-tags" style="margin-bottom:16px"></div>
+    <div class="dsec" id="d-memo-sec">
+      <div class="dlbl">要望・メモ</div>
+      <div class="dmemo" id="d-memo"></div>
+    </div>
+    <div class="dsec" id="d-file-sec" style="display:none">
+      <div class="dlbl">納品物</div>
+      <div class="dfile"><span>📎</span><a id="d-file-link" href="#" target="_blank" rel="noopener"></a></div>
+    </div>
+    <div class="dsec">
+      <div class="dlbl">発注情報</div>
+      <div class="dgrid">
+        <div class="di"><div class="dilbl">発注者</div><div class="dival" id="d-a">—</div></div>
+        <div class="di"><div class="dilbl">発注日</div><div class="dival" id="d-created">—</div></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="d-actions"></div>
+  </div>
+</div>
+
+<!-- Deliver Modal -->
+<div class="overlay" id="deliver-modal" onclick="if(event.target===this)closeDeliver()">
+  <div class="modal">
+    <div class="modal-title">納品する</div>
+    <input type="hidden" id="did">
+    <div class="form-row"><label class="lbl">納品物URL <span style="color:var(--red)">*</span></label><input type="text" class="inp" id="dfurl" placeholder="Google DriveのリンクなどURL"></div>
+    <div class="form-row"><label class="lbl">ファイル名（任意）</label><input type="text" class="inp" id="dfname" placeholder="例：株式会社〇〇_MEO提案書.pptx"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDeliver()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitDeliver()">納品を確定する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.body.insertAdjacentHTML("beforeend","<div id=loading style='position:fixed;inset:0;background:#F0EFE9;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px'><div style='width:32px;height:32px;border:3px solid #E2DFD6;border-top-color:#B4690E;border-radius:50%;animation:spin .8s linear infinite'></div><div style='font-size:13px;color:#5C5A62'>接続中...</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>");
+
+let orders = [];
+let _db, _ref, _set, _remove, _onValue;
+
+function fbSet(p, v) { if (_db) _set(_ref(_db, p), v); }
+function fbDel(p) { if (_db) _remove(_ref(_db, p)); }
+function saveOrder(o) { fbSet("team2/orders/" + o.id, o); }
+function deleteOrder(id) {
+  if (!confirm("この発注を削除しますか？")) return;
+  fbDel("team2/orders/" + id);
+  closeDetail();
+}
+
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function fmtDate(ts) { return ts ? new Date(ts).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" }) : "—"; }
+
+const AVATAR_COLOR = { "渡部": "#3A5EE5", "横井": "#1A7A50", "上浦": "#C0253A", "太田": "#6B35C8" };
+
+function updateStats() {
+  document.getElementById("stAll").textContent = orders.length;
+  document.getElementById("stOrdered").textContent = orders.filter(o => o.status === "ordered").length;
+  document.getElementById("stProgress").textContent = orders.filter(o => o.status === "in_progress").length;
+  document.getElementById("stDelivered").textContent = orders.filter(o => o.status === "delivered").length;
+}
+
+function renderBoard() {
+  updateStats();
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const filtered = q ? orders.filter(o => (o.clientName || "").toLowerCase().includes(q)) : orders;
+
+  const ordered = filtered.filter(o => o.status === "ordered").sort((a, b) => a.createdAt - b.createdAt);
+  const progress = filtered.filter(o => o.status === "in_progress").sort((a, b) => a.createdAt - b.createdAt);
+  const delivered = filtered.filter(o => o.status === "delivered").sort((a, b) => (b.deliveredAt || 0) - (a.deliveredAt || 0));
+
+  renderCol("col-ordered", "cnt-ordered", ordered, "発注はまだありません");
+  renderCol("col-progress", "cnt-progress", progress, "作成中の資料はありません");
+  renderCol("col-delivered", "cnt-delivered", delivered, q ? "該当する資料が見つかりません" : "まだ納品物はありません");
+}
+
+function renderCol(colId, cntId, list, emptyText) {
+  document.getElementById(cntId).textContent = list.length;
+  const el = document.getElementById(colId);
+  el.innerHTML = list.length ? list.map((o, i) => cardHTML(o, i)).join("") : `<div class="empty">${emptyText}</div>`;
+}
+
+function cardHTML(o, i) {
+  const color = AVATAR_COLOR[o.requestedBy] || "#9B99A4";
+  return `<div class="card" style="animation-delay:${i * 15}ms" onclick="openDetail(${o.id})">
+    <div class="card-inner">
+      <div class="card-top"><div class="card-name">${esc(o.clientName)}</div></div>
+      ${o.brief ? `<div class="card-memo">${esc(o.brief)}</div>` : ""}
+      <div class="tags">
+        <span class="tag" style="background:${color}18;color:${color}">👤 ${esc(o.requestedBy || "未定")}</span>
+        <span class="tag tdue">📅 ${fmtDate(o.createdAt)}発注</span>
+        ${o.status === "delivered" && o.fileUrl ? `<span class="tag" style="background:var(--green-bg);color:var(--green)">📎 納品物あり</span>` : ""}
+      </div>
+    </div>
+    <div class="card-acts">
+      <button class="ib del" onclick="event.stopPropagation();deleteOrder(${o.id})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V2.5h4V4M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4"/><path d="M7 7v3M9 7v3"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function openAdd() {
+  document.getElementById("eid").value = "";
+  document.getElementById("mtitle").textContent = "発注する";
+  document.getElementById("fn").value = "";
+  document.getElementById("fm").value = "";
+  document.getElementById("fa").value = "";
+  document.getElementById("order-modal").classList.add("open");
+  setTimeout(() => document.getElementById("fn").focus(), 180);
+}
+function closeModal() { document.getElementById("order-modal").classList.remove("open"); }
+function saveOrderForm() {
+  const name = document.getElementById("fn").value.trim();
+  if (!name) {
+    const el = document.getElementById("fn");
+    el.style.borderColor = "var(--red)"; el.focus();
+    setTimeout(() => el.style.borderColor = "", 1500);
+    return;
+  }
+  const brief = document.getElementById("fm").value.trim();
+  const requestedBy = document.getElementById("fa").value;
+  saveOrder({
+    id: Date.now(),
+    createdAt: Date.now(),
+    clientName: name,
+    brief,
+    requestedBy,
+    status: "ordered",
+    fileUrl: null,
+    fileName: null,
+    deliveredAt: null
+  });
+  closeModal();
+}
+document.getElementById("fn").addEventListener("keydown", e => { if (e.key === "Enter") saveOrderForm(); });
+
+const STATUS_LABEL = { ordered: "📥 受注", in_progress: "🛠️ 作成中", delivered: "✅ 納品済み" };
+function openDetail(id) {
+  const o = orders.find(o => o.id === id); if (!o) return;
+  const color = AVATAR_COLOR[o.requestedBy] || "#9B99A4";
+  document.getElementById("d-name").textContent = o.clientName;
+  document.getElementById("d-tags").innerHTML =
+    `<span class="tag" style="background:${color}18;color:${color};font-size:12px">👤 ${esc(o.requestedBy || "未定")}</span>` +
+    `<span class="tag tdue" style="font-size:12px">${STATUS_LABEL[o.status] || o.status}</span>`;
+  const ms = document.getElementById("d-memo-sec");
+  if (o.brief) { document.getElementById("d-memo").textContent = o.brief; ms.style.display = ""; }
+  else ms.style.display = "none";
+  const fs = document.getElementById("d-file-sec");
+  if (o.status === "delivered" && o.fileUrl) {
+    document.getElementById("d-file-link").href = o.fileUrl;
+    document.getElementById("d-file-link").textContent = o.fileName || o.fileUrl;
+    fs.style.display = "";
+  } else fs.style.display = "none";
+  document.getElementById("d-a").textContent = o.requestedBy || "未定";
+  document.getElementById("d-created").textContent = fmtDate(o.createdAt);
+
+  const actions = document.getElementById("d-actions");
+  let html = `<button class="btn btn-ghost" onclick="closeDetail()">閉じる</button>`;
+  if (o.status === "ordered") {
+    html += `<button class="btn btn-primary" onclick="setStatus(${o.id},'in_progress')">🛠️ 作成中にする</button>`;
+  } else if (o.status === "in_progress") {
+    html += `<button class="btn btn-ghost" onclick="setStatus(${o.id},'ordered')">← 受注に戻す</button>`;
+    html += `<button class="btn btn-primary" onclick="openDeliver(${o.id})">✅ 納品する</button>`;
+  } else if (o.status === "delivered") {
+    html += `<button class="btn btn-ghost" onclick="setStatus(${o.id},'in_progress')">← 作成中に戻す</button>`;
+  }
+  actions.innerHTML = html;
+
+  document.getElementById("detail-modal").classList.add("open");
+}
+function closeDetail() { document.getElementById("detail-modal").classList.remove("open"); }
+
+function setStatus(id, status) {
+  const o = orders.find(o => o.id === id); if (!o) return;
+  o.status = status;
+  if (status !== "delivered") { o.fileUrl = null; o.fileName = null; o.deliveredAt = null; }
+  saveOrder(o);
+  closeDetail();
+}
+
+function openDeliver(id) {
+  document.getElementById("did").value = id;
+  document.getElementById("dfurl").value = "";
+  document.getElementById("dfname").value = "";
+  document.getElementById("deliver-modal").classList.add("open");
+  setTimeout(() => document.getElementById("dfurl").focus(), 180);
+}
+function closeDeliver() { document.getElementById("deliver-modal").classList.remove("open"); }
+function submitDeliver() {
+  const id = Number(document.getElementById("did").value);
+  const url = document.getElementById("dfurl").value.trim();
+  if (!url) {
+    const el = document.getElementById("dfurl");
+    el.style.borderColor = "var(--red)"; el.focus();
+    setTimeout(() => el.style.borderColor = "", 1500);
+    return;
+  }
+  const o = orders.find(o => o.id === id); if (!o) return;
+  o.status = "delivered";
+  o.fileUrl = url;
+  o.fileName = document.getElementById("dfname").value.trim() || null;
+  o.deliveredAt = Date.now();
+  saveOrder(o);
+  closeDeliver();
+  closeDetail();
+}
+
+document.addEventListener("keydown", e => {
+  const inInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
+  if (!inInput && (e.key === "n" || e.key === "N")) openAdd();
+  if (e.key === "Escape") { closeModal(); closeDetail(); closeDeliver(); }
+});
+
+function initFirebase() {
+  _db = window._fb.db; _ref = window._fb.ref; _set = window._fb.set; _remove = window._fb.remove; _onValue = window._fb.onValue;
+  _onValue(_ref(_db, "team2/orders"), snap => {
+    const val = snap.val();
+    orders = val ? Object.values(val) : [];
+    renderBoard();
+    const l = document.getElementById("loading"); if (l) l.style.display = "none";
+  });
+}
+if (window._fbReady) initFirebase();
+else window.addEventListener("fb-ready", initFirebase);
+</script>
+</body>
+</html>
