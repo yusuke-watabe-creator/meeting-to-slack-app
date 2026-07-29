@@ -211,6 +211,46 @@ body{
 .qa-row{display:flex;gap:7px;align-items:center}
 .qsel{flex:1;padding:7px 9px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:12px;color:var(--text);background:var(--surface);outline:none}
 .qsel:focus{border-color:var(--accent)}
+
+/* ---- subcontractor workshop (MEO資料作成会社) ---- */
+.sub-wrap{max-width:960px;margin:0 auto;padding:0 20px 32px}
+.sub-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sub-title{font-size:15px;font-weight:600}
+.sub-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+
+.workshop{
+  position:relative;width:700px;height:300px;margin:0 auto;border-radius:var(--r12);overflow:hidden;
+  background:linear-gradient(180deg,#2E2620 0%,#2E2620 46%,#4A3A28 46%,#4A3A28 100%);
+  border:2px solid #241C16;
+}
+.workshop-bulb-cord{position:absolute;left:390px;top:0;width:2px;height:56px;background:#6b5a42}
+.workshop-bulb{position:absolute;left:390px;top:56px;width:22px;height:22px;border-radius:50%;background:radial-gradient(#FFF6D6,#D9A93D);box-shadow:0 0 34px 16px rgba(255,214,120,.28);transform:translate(-50%,-50%)}
+.workshop-shelf{position:absolute;left:26px;top:104px;width:132px;height:172px}
+.shelf-plank{position:absolute;left:0;right:0;height:6px;background:#2A1F14;box-shadow:0 2px 2px rgba(0,0,0,.3)}
+.shelf-box{position:absolute;border-radius:2px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.craft-desk{position:absolute;left:250px;top:196px;width:230px;height:78px;background:#5C4227;border:3px solid #3A2A18;border-radius:6px;box-shadow:0 6px 0 rgba(0,0,0,.2);z-index:3}
+.paper-pile{position:absolute;left:16px;right:70px;bottom:100%}
+.paper-sheet{position:absolute;left:0;width:120px;height:15px;background:#F3EEDD;border:1px solid #CBBF9C;border-radius:1px;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.paper-sheet::before{content:"";position:absolute;left:8px;right:24px;top:5px;height:1.5px;background:#CBBF9C}
+.paper-sheet::after{content:"";position:absolute;left:8px;right:40px;top:9px;height:1.5px;background:#CBBF9C}
+.inbox-stack{position:absolute;right:6px;bottom:100%;width:56px;height:40px}
+.inbox-sheet{position:absolute;left:0;top:0;width:56px;height:36px;background:#EDE3C8;border:1px solid #C9BB94;border-radius:1px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+
+.craftsman{position:absolute;left:305px;top:104px;width:130px;height:110px;z-index:2}
+@keyframes craftBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.craftsman-body{animation:craftBob 3.2s ease-in-out infinite}
+@keyframes penWiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(-9deg)}}
+.pen-arm{transform-origin:112px 76px;animation:penWiggle 1s ease-in-out infinite}
+.craftsman.overloaded .pen-arm{animation-duration:.45s}
+.craftsman .sweat{opacity:0}
+.craftsman.overloaded .sweat{animation:sweatDrip 1.1s ease-in infinite}
+.craftsman .mouth-calm{display:block}
+.craftsman .mouth-strained{display:none}
+.craftsman.overloaded .mouth-calm{display:none}
+.craftsman.overloaded .mouth-strained{display:block}
+
+.workshop-status{margin-top:14px;font-size:13px;color:var(--text2);text-align:center;background:var(--surface2);border-radius:var(--r8);padding:9px 12px}
+.workshop-status .num{font-family:var(--mono);font-weight:700;color:var(--text)}
 </style>
 </head>
 <body>
@@ -280,6 +320,72 @@ body{
       </div>
     </div>
     <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div class="sub-wrap">
+  <div class="stage-card">
+    <div class="sub-header">
+      <div>
+        <div class="sub-title">🪚 MEO資料作成会社（下請け）</div>
+        <div class="sub-sub">資料作成専門の職人が一人で切り盛りしています</div>
+      </div>
+      <a href="orders.html" class="nav-link">発注管理を開く →</a>
+    </div>
+    <div class="workshop" id="workshop">
+      <div class="workshop-bulb-cord"></div>
+      <div class="workshop-bulb"></div>
+      <div class="workshop-shelf">
+        <div class="shelf-plank" style="top:24px;"></div>
+        <div class="shelf-plank" style="top:76px;"></div>
+        <div class="shelf-plank" style="top:128px;"></div>
+        <div class="shelf-box" style="left:6px;top:2px;width:26px;height:22px;background:#7A5B34"></div>
+        <div class="shelf-box" style="left:38px;top:0px;width:22px;height:24px;background:#5C4227"></div>
+        <div class="shelf-box" style="left:70px;top:4px;width:30px;height:20px;background:#6B4A2A"></div>
+        <div class="shelf-box" style="left:14px;top:82px;width:34px;height:34px;background:#4A3420"></div>
+        <div class="shelf-box" style="left:60px;top:86px;width:40px;height:30px;background:#7A5B34"></div>
+      </div>
+      <div class="craftsman" id="craftsman">
+        <svg class="craft-svg" viewBox="0 0 140 110" width="130" height="110">
+          <g class="craftsman-body">
+            <rect x="30" y="58" width="80" height="46" rx="14" fill="#F4F1EA"/>
+            <path d="M50,58 L70,66 L60,78" fill="none" stroke="#B7AE95" stroke-width="2"/>
+            <path d="M90,58 L70,66 L80,78" fill="none" stroke="#B7AE95" stroke-width="2"/>
+            <ellipse cx="28" cy="80" rx="9" ry="14" fill="#F4F1EA"/>
+            <circle cx="26" cy="94" r="6" fill="#F0C9A0"/>
+            <g class="pen-arm">
+              <ellipse cx="112" cy="76" rx="9" ry="15" fill="#F4F1EA" transform="rotate(-10 112 76)"/>
+              <circle cx="118" cy="92" r="6" fill="#F0C9A0"/>
+              <line x1="118" y1="92" x2="132" y2="100" stroke="#3A2A18" stroke-width="2.4" stroke-linecap="round"/>
+            </g>
+            <circle cx="70" cy="34" r="24" fill="#F0C9A0"/>
+            <path d="M46,28 Q44,42 50,50 Q46,34 54,24 Z" fill="#A9A79E"/>
+            <path d="M94,28 Q96,42 90,50 Q94,34 86,24 Z" fill="#A9A79E"/>
+            <path d="M47,22 Q70,13 93,22 L93,26 Q70,19 47,26 Z" fill="#3E7A4F"/>
+            <path d="M58,28 q4,-3 9,-1" stroke="#A9A79E" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M83,27 q-5,-2 -9,1" stroke="#A9A79E" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <circle cx="62" cy="34" r="7" fill="none" stroke="#3A2A18" stroke-width="2"/>
+            <circle cx="80" cy="34" r="7" fill="none" stroke="#3A2A18" stroke-width="2"/>
+            <line x1="69" y1="34" x2="73" y2="34" stroke="#3A2A18" stroke-width="2"/>
+            <line x1="55" y1="32" x2="50" y2="30" stroke="#3A2A18" stroke-width="2"/>
+            <line x1="87" y1="32" x2="92" y2="30" stroke="#3A2A18" stroke-width="2"/>
+            <path d="M60,42 Q70,48 80,42 Q70,46 60,42 Z" fill="#A9A79E"/>
+            <path class="mouth-calm" d="M64,45 Q70,47 76,45" stroke="#8a5a3a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path class="mouth-strained" d="M64,47 Q70,42 76,47" stroke="#8a5a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path class="sweat" d="M90,20 q4,7 0,10 q-4,-3 0,-10 z" fill="#7cc4ff"/>
+          </g>
+        </svg>
+      </div>
+      <div class="craft-desk">
+        <div class="paper-pile" id="paper-pile"></div>
+        <div class="inbox-stack">
+          <div class="inbox-sheet" style="transform:rotate(-6deg)"></div>
+          <div class="inbox-sheet" style="transform:rotate(4deg);top:5px"></div>
+          <div class="inbox-sheet" style="transform:rotate(-2deg);top:10px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="workshop-status" id="workshop-status">読み込み中…</div>
   </div>
 </div>
 
@@ -708,10 +814,46 @@ function initFirebase() {
   });
 }
 
+function renderPaperPile(count) {
+  const pile = document.getElementById('paper-pile');
+  const sheets = Math.max(3, Math.min(3 + count, 16));
+  let html = '';
+  for (let i = 0; i < sheets; i++) {
+    const rot = (i % 2 === 0 ? 1 : -1) * (2 + (i % 5));
+    const xOff = i % 3 === 0 ? -4 : i % 3 === 1 ? 4 : 0;
+    html += `<div class="paper-sheet" style="bottom:${i * 6}px;left:${xOff}px;transform:rotate(${rot}deg);z-index:${i}"></div>`;
+  }
+  pile.innerHTML = html;
+  pile.style.height = (sheets * 6 + 15) + 'px';
+}
+
+function renderWorkshop(orders) {
+  const active = orders.filter(o => o.status === 'ordered' || o.status === 'in_progress').length;
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  renderPaperPile(active);
+  const overloaded = active >= 4;
+  document.getElementById('craftsman').classList.toggle('overloaded', overloaded);
+  const msg = active === 0
+    ? '涼しい顔で一息ついている。新しい発注を待っています。'
+    : overloaded
+      ? '机が書類で埋もれ気味…急ぎの発注は少し待たせるかも。'
+      : '黙々と資料をこなしています。';
+  document.getElementById('workshop-status').innerHTML =
+    `対応中: <span class="num">${active}</span>件　/　納品済み: <span class="num">${delivered}</span>件<br>${msg}`;
+}
+
+function initWorkshop() {
+  const { db, ref, onValue } = window._fb;
+  onValue(ref(db, 'team2/orders'), snap => {
+    const val = snap.val();
+    renderWorkshop(val ? Object.values(val) : []);
+  });
+}
+
 buildRoom();
 requestAnimationFrame(tick);
-if (window._fbReady) initFirebase();
-else window.addEventListener('fb-ready', initFirebase);
+if (window._fbReady) { initFirebase(); initWorkshop(); }
+else window.addEventListener('fb-ready', () => { initFirebase(); initWorkshop(); });
 </script>
 </body>
 </html>
