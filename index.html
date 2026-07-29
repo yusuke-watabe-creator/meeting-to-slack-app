@@ -19,6 +19,12 @@
   }
   .wrap { max-width: 720px; margin: 0 auto; }
   .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .page-nav{position:fixed;top:22px;right:18px;z-index:300;display:flex;flex-direction:column;gap:10px}
+  .pn-item{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:11px 18px 11px 14px;font-size:13.5px;font-weight:600;color:#4b5563;text-decoration:none;box-shadow:0 3px 10px rgba(0,0,0,.09);transition:all .15s;white-space:nowrap}
+  .pn-item:hover{border-color:#2563eb;color:#2563eb;transform:translateX(-3px)}
+  .pn-item.active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 4px 16px rgba(37,99,235,.35);cursor:default}
+  .pn-icon{font-size:18px;line-height:1}
+  @media (max-width:1300px){.page-nav{position:static;flex-direction:row;flex-wrap:wrap;justify-content:center;margin:0 0 16px}}
   .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
   .row { display: flex; gap: 10px; margin-bottom: 12px; }
   .row .field { flex: 1; }
@@ -125,14 +131,15 @@
 </style>
 </head>
 <body>
+<div class="page-nav">
+  <span class="pn-item active"><span class="pn-icon">📝</span>商談メモ</span>
+  <a href="tasks.html" class="pn-item"><span class="pn-icon">✅</span>タスク管理</a>
+  <a href="office.html" class="pn-item"><span class="pn-icon">🏢</span>オフィス</a>
+  <a href="orders.html" class="pn-item"><span class="pn-icon">📦</span>資料作成会社</a>
+</div>
 <div class="wrap">
   <div class="row" style="justify-content:space-between;align-items:center;">
     <div class="title">商談メモ → Slack / Gmail 連携ツール</div>
-    <div style="display:flex;gap:12px;">
-      <a href="office.html" style="font-size:13px;color:#2563eb;text-decoration:none;white-space:nowrap;">オフィス →</a>
-      <a href="tasks.html" style="font-size:13px;color:#2563eb;text-decoration:none;white-space:nowrap;">タスク管理 →</a>
-      <a href="orders.html" style="font-size:13px;color:#2563eb;text-decoration:none;white-space:nowrap;">資料作成会社 →</a>
-    </div>
   </div>
   <div class="subtitle">商談内容を入力 → #渡部チーム--26年 へSlack投稿 / 先方へのフォローアップメール下書きをGmailに作成</div>
 
