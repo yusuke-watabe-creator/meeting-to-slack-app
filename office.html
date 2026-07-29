@@ -72,14 +72,29 @@ body{
 .furniture-desk .monitor::after{content:"";position:absolute;left:12px;bottom:-6px;width:8px;height:6px;background:#4b5563}
 .furniture-desk .label{position:absolute;left:0;right:0;top:40px;text-align:center;font-size:10px;font-weight:700;color:var(--text3)}
 
-/* meeting table */
-.meeting-table{position:absolute;left:508px;top:250px;width:130px;height:60px;background:var(--wood);border:3px solid var(--wood2);border-radius:14px}
+/* meeting table + chairs */
+.meeting-table{position:absolute;left:508px;top:250px;width:130px;height:60px;background:var(--wood);border:3px solid var(--wood2);border-radius:14px;z-index:1}
+.chair{position:absolute;width:24px;height:22px}
+.chair .seat{position:absolute;left:2px;right:2px;bottom:0;height:14px;background:#ABA394;border-radius:4px}
+.chair.face-down .back{position:absolute;left:3px;right:3px;top:0;height:9px;background:#877E6E;border-radius:4px 4px 0 0}
+.chair.face-up .back{position:absolute;left:3px;right:3px;bottom:0;height:9px;background:#877E6E;border-radius:0 0 4px 4px}
 
 /* break furniture */
 .coffee-machine{position:absolute;left:36px;top:200px;width:34px;height:44px;background:#6b7280;border-radius:6px 6px 3px 3px}
 .coffee-machine::before{content:"";position:absolute;left:8px;top:-6px;width:18px;height:8px;background:#4b5563;border-radius:3px 3px 0 0}
 .plant-pot{position:absolute;left:170px;top:290px;width:28px;height:22px;background:#A05C00;border-radius:4px 4px 8px 8px}
 .plant-leaf{position:absolute;left:172px;top:262px;width:24px;height:30px;background:#3B6D11;border-radius:60% 40% 60% 40%}
+
+.sofa{position:absolute;left:60px;top:330px;width:150px;height:46px}
+.sofa .sofa-back{position:absolute;left:0;right:0;top:0;height:20px;background:#A66A3D;border-radius:8px 8px 0 0}
+.sofa .sofa-seat{position:absolute;left:0;right:0;bottom:0;height:26px;background:#C98A54;border-radius:6px}
+.sofa .sofa-arm-l{position:absolute;left:-7px;top:4px;bottom:0;width:14px;background:#A66A3D;border-radius:6px}
+.sofa .sofa-arm-r{position:absolute;right:-7px;top:4px;bottom:0;width:14px;background:#A66A3D;border-radius:6px}
+
+.vending{position:absolute;left:186px;top:186px;width:32px;height:70px;background:#1D4ED8;border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.vending .vending-window{position:absolute;left:4px;top:6px;right:4px;height:36px;background:#DCE5FA;border-radius:2px;overflow:hidden}
+.vending .vending-window::after{content:"";position:absolute;left:2px;right:2px;top:6px;height:1.5px;background:#93A5C9;box-shadow:0 6px 0 #93A5C9,0 12px 0 #93A5C9,0 18px 0 #93A5C9,0 24px 0 #93A5C9}
+.vending .vending-slot{position:absolute;left:6px;right:6px;bottom:6px;height:10px;background:#0F2A9E;border-radius:2px}
 
 /* ---- character sprite ---- */
 .person{position:absolute;width:52px;height:80px;transform:translate(-50%,-100%);z-index:5}
@@ -151,7 +166,19 @@ body{
       <div class="zone zone-meeting"><span class="zone-label">会議室</span></div>
       <div class="coffee-machine"></div>
       <div class="plant-leaf"></div><div class="plant-pot"></div>
+      <div class="sofa">
+        <div class="sofa-arm-l"></div><div class="sofa-arm-r"></div>
+        <div class="sofa-back"></div><div class="sofa-seat"></div>
+      </div>
+      <div class="vending">
+        <div class="vending-window"></div>
+        <div class="vending-slot"></div>
+      </div>
       <div class="meeting-table"></div>
+      <div class="chair face-down" style="left:516px;top:224px;"><div class="back"></div><div class="seat"></div></div>
+      <div class="chair face-down" style="left:604px;top:224px;"><div class="back"></div><div class="seat"></div></div>
+      <div class="chair face-up" style="left:516px;top:312px;"><div class="back"></div><div class="seat"></div></div>
+      <div class="chair face-up" style="left:604px;top:312px;"><div class="back"></div><div class="seat"></div></div>
       <!-- desks injected by JS -->
     </div>
     <div class="legend" id="legend"></div>
