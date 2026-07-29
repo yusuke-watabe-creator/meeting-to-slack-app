@@ -23,6 +23,10 @@ window._fb = { db, ref, onValue };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
+<script src="constants.js"></script>
+<script src="calendar.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -47,6 +51,9 @@ body{
 .brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
 .brand-name{font-size:15px;font-weight:600}
 .nav-link{font-size:13px;color:var(--accent);text-decoration:none}
+.cal-btn{font-size:12.5px;font-weight:600;color:var(--accent);background:var(--surface2);border:none;border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--font)}
+.cal-btn.connected{color:#1A7A50;background:#E8F5EE;cursor:default}
+.cal-btn:disabled{opacity:.6;cursor:default}
 .wrap{max-width:960px;margin:0 auto;padding:28px 20px}
 .stage-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:16px;overflow-x:auto}
 
@@ -111,6 +118,7 @@ body{
 @keyframes bodyBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 .walking .body-grp{animation:bodyBob .38s ease-in-out infinite}
 .state-idle:not(.walking) .body-grp{animation:bob 2.6s ease-in-out infinite}
+.state-meeting:not(.walking) .body-grp{animation:bob 2.6s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-2px) rotate(-2deg)}75%{transform:translateX(2px) rotate(2deg)}}
 .state-overdue:not(.walking) .body-grp{animation:shake .35s ease-in-out infinite}
@@ -118,7 +126,7 @@ body{
 .state-overdue .sweat{animation:sweatDrip 1.1s ease-in infinite}
 .sweat{opacity:0}
 .mouth{display:none}
-.state-idle .mouth-neutral,.state-working .mouth-happy,.state-overdue .mouth-worried{display:block}
+.state-idle .mouth-neutral,.state-working .mouth-happy,.state-overdue .mouth-worried,.state-meeting .mouth-neutral{display:block}
 .brow{display:none}
 .state-overdue .brow{display:block}
 
@@ -176,7 +184,8 @@ body{
     <div class="brand-icon">&#10022;</div>
     <div class="brand-name">渡部T バーチャルオフィス</div>
   </div>
-  <div style="display:flex;gap:14px;">
+  <div style="display:flex;gap:14px;align-items:center;">
+    <button id="cal-connect-btn" class="cal-btn" onclick="connectCalendar()">📅 カレンダー連携</button>
     <a href="index.html" class="nav-link">← 商談メモ</a>
     <a href="tasks.html" class="nav-link">タスク管理 →</a>
   </div>
@@ -231,7 +240,7 @@ body{
 <script>
 // 渡部が一番端（左端の席）。太田さんは女性キャラクター。
 const PEOPLE = [
-  { key: '渡部', color: '#3A5EE5', ch: '渡', role: 'FS', deskX: 90, suit: true },
+  { key: '渡部', color: '#3A5EE5', ch: '渡', role: 'FS', deskX: 90, suit: true, email: 'yusuke-watabe@gmotech.jp' },
   { key: '横井', color: '#1A7A50', ch: '横', role: 'FS', deskX: 260, suit: true },
   { key: '上浦', color: '#C0253A', ch: '上', role: 'IS', deskX: 430 },
   { key: '太田', color: '#6B35C8', ch: '太', role: 'IS', deskX: 600, female: true }
@@ -241,6 +250,14 @@ const STAND_Y = 130;
 const BREAK_BOUNDS = { x1: 40, x2: 200, y1: 210, y2: 360 };
 const CELEBRATE_SPOT = { x: 90, y: 260 };
 const SPEED = 60; // px/sec
+
+// 会議室の4脚それぞれの着席位置(人物のtransformは足元=bottom-centerを基準にしている)
+const MEETING_SEATS = [
+  { x: 528, y: 246 }, { x: 616, y: 246 },
+  { x: 528, y: 334 }, { x: 616, y: 334 }
+];
+const usedMeetingSeats = new Set();
+const CALENDAR_PEOPLE = PEOPLE.filter(p => p.email); // 現状はカレンダー連携する人だけ(渡部)
 
 function today() { return new Date().toISOString().split('T')[0]; }
 
@@ -317,6 +334,7 @@ function priorityIcon(pr) {
 
 function openPersonModal(key) {
   const p = PEOPLE.find(x => x.key === key);
+  const c = chars[key];
   const mine = allTasks.filter(t => t.assignee === key);
   const overdue = mine.filter(t => t.due && t.due < today());
 
@@ -324,10 +342,12 @@ function openPersonModal(key) {
   document.getElementById('pm-avatar').style.background = p.color;
   document.getElementById('pm-name').textContent = p.key;
   document.getElementById('pm-role').textContent = p.role;
-  document.getElementById('pm-status').textContent =
+  const taskStatus =
     overdue.length ? `⚠️ 期限切れのタスクが${overdue.length}件あります` :
     mine.length ? `${mine.length}件のタスクに対応中です` :
     'タスクはありません。のんびり中です';
+  document.getElementById('pm-status').textContent =
+    c && c.inMeeting ? `📅 現在、会議中です` : taskStatus;
 
   const sorted = mine.slice().sort((a, b) => {
     if (!a.due && !b.due) return 0;
@@ -405,7 +425,11 @@ function buildRoom() {
       mood: 'idle',
       wanderUntil: 0,
       celebrateUntil: 0,
-      prevCount: 0
+      prevCount: 0,
+      inMeeting: false,
+      meetingSeat: null,
+      taskIcon: '💤',
+      taskStatusText: 'のんびり中'
     };
   });
 }
@@ -436,10 +460,10 @@ function applyData(tasks) {
     }
     c.prevCount = mine.length;
     c.mood = mood;
-    c.icon = icon;
+    c.taskIcon = icon;
+    c.taskStatusText = statusText;
+    refreshDisplay(p.key);
 
-    c.el.querySelector('.mood-icon').textContent = icon;
-    c.legendEl.querySelector('.legend-status').textContent = statusText;
     const due = upcoming ? fmtDue(upcoming.due) : null;
     c.legendEl.querySelector('.legend-badges').innerHTML =
       `<span class="badge badge-count">${mine.length}件</span>` +
@@ -447,6 +471,64 @@ function applyData(tasks) {
         ? `<span class="badge badge-ok">タスクなし</span>`
         : due ? `<span class="badge badge-due ${due.cls}">📅 ${due.label}</span>` : '');
   });
+}
+
+// タスク由来のアイコン/ステータスと、カレンダー由来の「会議中」を合成して表示する。
+function refreshDisplay(key) {
+  const c = chars[key];
+  if (!c) return;
+  const icon = c.inMeeting ? '📅' : c.taskIcon;
+  const statusText = c.inMeeting ? '会議中' : c.taskStatusText;
+  c.el.querySelector('.mood-icon').textContent = icon;
+  c.legendEl.querySelector('.legend-status').textContent = statusText;
+}
+
+function assignMeetingSeat() {
+  for (let i = 0; i < MEETING_SEATS.length; i++) {
+    if (!usedMeetingSeats.has(i)) { usedMeetingSeats.add(i); return i; }
+  }
+  return null; // 全席埋まっている場合はテーブル付近に留まる(現状は連携1人のみなので発生しない)
+}
+
+function applyCalendarStatus(key, busy) {
+  const c = chars[key];
+  if (!c) return;
+  if (busy && !c.inMeeting) {
+    c.inMeeting = true;
+    c.meetingSeat = assignMeetingSeat();
+  } else if (!busy && c.inMeeting) {
+    c.inMeeting = false;
+    if (c.meetingSeat != null) { usedMeetingSeats.delete(c.meetingSeat); c.meetingSeat = null; }
+  }
+  refreshDisplay(key);
+}
+
+async function connectCalendar() {
+  const btn = document.getElementById('cal-connect-btn');
+  btn.disabled = true;
+  btn.textContent = '連携中…';
+  try {
+    await ensureCalendarToken();
+    btn.textContent = '✓ カレンダー連携済み';
+    btn.classList.add('connected');
+    pollCalendar();
+    setInterval(pollCalendar, 2 * 60 * 1000);
+  } catch (e) {
+    alert('カレンダー連携に失敗しました: ' + e.message);
+    btn.textContent = '📅 カレンダー連携';
+    btn.disabled = false;
+  }
+}
+
+async function pollCalendar() {
+  if (!CALENDAR_PEOPLE.length) return;
+  try {
+    const emails = CALENDAR_PEOPLE.map(p => p.email);
+    const busyMap = await fetchNowBusyMap(emails);
+    CALENDAR_PEOPLE.forEach(p => applyCalendarStatus(p.key, !!busyMap[p.email]));
+  } catch (e) {
+    console.error('calendar poll failed', e);
+  }
 }
 
 let lastTs = 0;
@@ -465,7 +547,10 @@ function tick(ts) {
     }
 
     if (!c.celebrateUntil) {
-      if (c.mood === 'idle') {
+      if (c.inMeeting) {
+        const seat = c.meetingSeat != null ? MEETING_SEATS[c.meetingSeat] : { x: 572, y: 300 };
+        c.targetX = seat.x; c.targetY = seat.y;
+      } else if (c.mood === 'idle') {
         if (now > c.wanderUntil) {
           const dist = Math.hypot(c.x - c.targetX, c.y - c.targetY);
           if (dist < 3) {
@@ -495,7 +580,7 @@ function tick(ts) {
     else if (dx > 1) c.el.classList.remove('facing-left');
     c.el.classList.toggle('celebrating', !!c.celebrateUntil);
     c.el.className = c.el.className.replace(/state-\S+/g, '').trim();
-    c.el.classList.add('state-' + c.mood);
+    c.el.classList.add('state-' + (c.inMeeting ? 'meeting' : c.mood));
     const moodIcon = c.el.querySelector('.mood-icon');
     moodIcon.classList.toggle('show', !walking && !c.celebrateUntil);
   });

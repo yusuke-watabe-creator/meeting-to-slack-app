@@ -19,15 +19,18 @@ Slack管理画面で `#渡部チーム--26年` チャンネル宛のIncoming Web
 > 注意: Incoming Webhook経由の投稿は「Incoming Webhook」というアプリ名で投稿され、投稿者本人のアカウント名にはならない。事前にチームへ共有しておくこと。
 > また、ブラウザからのfetchはCORSの都合上レスポンスを読み取れない（`mode:'no-cors'`で送信）ため、アプリ上では送信成否を確認できない。到達確認はSlack側で行うこと。
 
-### 2. Google Cloud OAuth設定（Gmail連携用）
+### 2. Google Cloud OAuth設定（Gmail連携・バーチャルオフィスのカレンダー連携用）
 1. Google Cloud Consoleでプロジェクトを作成
 2. OAuth同意画面: **User Type: Internal**（`gmotech.jp`組織限定）に設定 → Google審査不要
 3. OAuth 2.0 クライアントID（種類: **ウェブアプリケーション**）を作成
    - 「承認済みのJavaScript生成元」に、実際にホスティングするURL（例: `https://xxx.example.com`）を登録
 4. 発行されたクライアントIDを `config.js` の `GOOGLE_CLIENT_ID` に設定
-5. 必要スコープ（コード側で要求済み、Console側の追加設定は不要）:
+5. **Gmail API** と **Calendar API** をそれぞれ「APIとサービス」→「ライブラリ」から有効化する
+6. 必要スコープ（コード側で要求済み、Console側の追加設定は不要）:
    - `gmail.readonly`（スレッド検索・ヘッダー取得）
    - `gmail.compose`（下書き作成）
+   - `calendar.freebusy`（バーチャルオフィス: 予定の詳細は見ず「今Busyかどうか」だけ取得）
+   - Calendar連携は、閲覧する側のGoogleアカウントが対象者の空き時間（Free/Busy）を見られる権限を持っている必要がある。同一Google Workspaceドメイン内であれば通常デフォルトで閲覧可能。
 
 ### 3. 文字起こしAI抽出用Workerのデプロイ（Cloudflare + Gemini API）
 課金・クレジットカード登録が一切不要な組み合わせ（Google Gemini APIの無料枠 + Cloudflare Workersの無料枠）を採用。
