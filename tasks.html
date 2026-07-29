@@ -327,6 +327,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       <div class="form-row" style="margin:0"><label class="lbl">期限日</label><input type="date" class="inp" id="fd"></div>
     </div>
     <div class="form-row" style="margin-top:13px"><label class="lbl">期限時間</label><input type="time" class="inp" id="ft"></div>
+    <div class="form-row" style="margin-top:13px"><label class="lbl">指示者（任意）</label><div class="sel-w"><select id="fb"><option value="">未設定</option><option value="渡部">渡部</option><option value="横井">横井</option><option value="上浦">上浦</option><option value="太田">太田</option></select></div></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
       <button class="btn btn-primary" onclick="saveTaskForm()">保存する</button>
@@ -350,6 +351,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
       <div class="dlbl">タスク情報</div>
       <div class="dgrid">
         <div class="di"><div class="dilbl">担当者</div><div class="dival" id="d-a">—</div></div>
+        <div class="di"><div class="dilbl">指示者</div><div class="dival" id="d-b">—</div></div>
         <div class="di"><div class="dilbl">優先度</div><div class="dival" id="d-p">—</div></div>
         <div class="di"><div class="dilbl">期限日</div><div class="dival" id="d-d">—</div></div>
         <div class="di"><div class="dilbl">カテゴリ</div><div class="dival" id="d-c">—</div></div>
@@ -553,6 +555,7 @@ function openDetail(id){
   const ms=document.getElementById("d-memo-sec");
   if(t.memo){document.getElementById("d-memo").textContent=t.memo;ms.style.display="";}else{ms.style.display="none";}
   document.getElementById("d-a").textContent=t.assignee||"未定";
+  document.getElementById("d-b").textContent=t.assignedBy||"未設定";
   document.getElementById("d-p").textContent=ptMap[t.priority]||"なし";
   document.getElementById("d-d").textContent=due?due.label:"未設定";
   document.getElementById("d-c").textContent=cat?cat.name:"なし";
@@ -565,7 +568,7 @@ function fillCats(){document.getElementById("fc").innerHTML='<option value="">�
 function openAdd(){
   document.getElementById("eid").value="";document.getElementById("mtitle").textContent="タスクを追加";
   ["fn","fm"].forEach(i=>document.getElementById(i).value="");
-  ["fp","fd","ft","fa"].forEach(i=>document.getElementById(i).value="");
+  ["fp","fd","ft","fa","fb"].forEach(i=>document.getElementById(i).value="");
   fillCats();document.getElementById("fc").value="";
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
@@ -576,6 +579,7 @@ function openEdit(id){
   document.getElementById("fn").value=t.name;document.getElementById("fm").value=t.memo||"";
   document.getElementById("fp").value=t.priority||"";document.getElementById("fd").value=t.due||"";
   document.getElementById("ft").value=t.dueTime||"";document.getElementById("fa").value=t.assignee||"";
+  document.getElementById("fb").value=t.assignedBy||"";
   fillCats();document.getElementById("fc").value=t.cat||"";
   document.getElementById("task-modal").classList.add("open");
   setTimeout(()=>document.getElementById("fn").focus(),180);
@@ -585,7 +589,7 @@ function saveTaskForm(){
   const name=document.getElementById("fn").value.trim();
   if(!name){const el=document.getElementById("fn");el.style.borderColor="var(--red)";el.focus();setTimeout(()=>el.style.borderColor="",1500);return;}
   const eid=document.getElementById("eid").value;
-  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee:document.getElementById("fa").value};
+  const data={name,memo:document.getElementById("fm").value.trim(),cat:document.getElementById("fc").value,priority:document.getElementById("fp").value,due:document.getElementById("fd").value,dueTime:document.getElementById("ft").value,assignee:document.getElementById("fa").value,assignedBy:document.getElementById("fb").value};
   if(eid){const t=tasks.find(t=>t.id==eid);if(t){Object.assign(t,data);window.saveTask(t);}}
   else window.saveTask({id:Date.now(),createdAt:Date.now(),...data});
   closeModal();
