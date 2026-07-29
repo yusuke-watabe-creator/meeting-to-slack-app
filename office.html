@@ -66,7 +66,7 @@ body{
 /* ---- room ---- */
 .room-scene{width:700px;margin:0 auto}
 .room{
-  position:relative;width:700px;height:420px;border-radius:0 0 var(--r12) var(--r12);overflow:hidden;
+  position:relative;width:700px;height:470px;border-radius:0 0 var(--r12) var(--r12);overflow:hidden;
   background-image:
     linear-gradient(90deg, rgba(0,0,0,.025) 1px, transparent 1px),
     linear-gradient(rgba(0,0,0,.025) 1px, transparent 1px);
@@ -99,13 +99,13 @@ body{
 .wall-shelf .book{position:absolute;bottom:8px;width:9px;border-radius:1px}
 
 /* ---- floor decor: cabinet + extra plant, in the open gap between the two zones ---- */
-.cabinet{position:absolute;left:300px;top:210px;width:100px;height:120px;background:var(--wood2);border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.cabinet{position:absolute;left:300px;top:260px;width:100px;height:120px;background:var(--wood2);border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
 .cabinet .shelf-line{position:absolute;left:6px;right:6px;height:3px;background:rgba(0,0,0,.18)}
 .cabinet .cbook{position:absolute;bottom:4px;border-radius:1px}
 
 .zone{position:absolute;border-radius:10px;display:flex;flex-direction:column}
-.zone-break{left:16px;top:170px;width:210px;height:220px;background:#EAF3DE;border:2px dashed #C3D9A0}
-.zone-meeting{left:460px;top:170px;width:224px;height:220px;background:#EEF0FC;border:2px dashed #C3CCF2}
+.zone-break{left:16px;top:220px;width:210px;height:220px;background:#EAF3DE;border:2px dashed #C3D9A0}
+.zone-meeting{left:460px;top:220px;width:224px;height:220px;background:#EEF0FC;border:2px dashed #C3CCF2}
 
 /* desks (fixed furniture, top row) */
 .furniture-desk{position:absolute;top:56px;width:96px;height:34px}
@@ -115,25 +115,25 @@ body{
 .furniture-desk .label{position:absolute;left:0;right:0;top:40px;text-align:center;font-size:10px;font-weight:700;color:var(--text3)}
 
 /* meeting table + chairs */
-.meeting-table{position:absolute;left:508px;top:250px;width:130px;height:60px;background:var(--wood);border:3px solid var(--wood2);border-radius:14px;z-index:1}
+.meeting-table{position:absolute;left:508px;top:300px;width:130px;height:60px;background:var(--wood);border:3px solid var(--wood2);border-radius:14px;z-index:1}
 .chair{position:absolute;width:24px;height:22px}
 .chair .seat{position:absolute;left:2px;right:2px;bottom:0;height:14px;background:#ABA394;border-radius:4px}
 .chair.face-down .back{position:absolute;left:3px;right:3px;top:0;height:9px;background:#877E6E;border-radius:4px 4px 0 0}
 .chair.face-up .back{position:absolute;left:3px;right:3px;bottom:0;height:9px;background:#877E6E;border-radius:0 0 4px 4px}
 
 /* break furniture */
-.coffee-machine{position:absolute;left:36px;top:200px;width:34px;height:44px;background:#6b7280;border-radius:6px 6px 3px 3px}
+.coffee-machine{position:absolute;left:36px;top:250px;width:34px;height:44px;background:#6b7280;border-radius:6px 6px 3px 3px}
 .coffee-machine::before{content:"";position:absolute;left:8px;top:-6px;width:18px;height:8px;background:#4b5563;border-radius:3px 3px 0 0}
-.plant-pot{position:absolute;left:170px;top:290px;width:28px;height:22px;background:#A05C00;border-radius:4px 4px 8px 8px}
-.plant-leaf{position:absolute;left:172px;top:262px;width:24px;height:30px;background:#3B6D11;border-radius:60% 40% 60% 40%}
+.plant-pot{position:absolute;left:170px;top:340px;width:28px;height:22px;background:#A05C00;border-radius:4px 4px 8px 8px}
+.plant-leaf{position:absolute;left:172px;top:312px;width:24px;height:30px;background:#3B6D11;border-radius:60% 40% 60% 40%}
 
-.sofa{position:absolute;left:60px;top:330px;width:150px;height:46px}
+.sofa{position:absolute;left:60px;top:380px;width:150px;height:46px}
 .sofa .sofa-back{position:absolute;left:0;right:0;top:0;height:20px;background:#A66A3D;border-radius:8px 8px 0 0}
 .sofa .sofa-seat{position:absolute;left:0;right:0;bottom:0;height:26px;background:#C98A54;border-radius:6px}
 .sofa .sofa-arm-l{position:absolute;left:-7px;top:4px;bottom:0;width:14px;background:#A66A3D;border-radius:6px}
 .sofa .sofa-arm-r{position:absolute;right:-7px;top:4px;bottom:0;width:14px;background:#A66A3D;border-radius:6px}
 
-.vending{position:absolute;left:186px;top:186px;width:32px;height:70px;background:#1D4ED8;border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.vending{position:absolute;left:186px;top:236px;width:32px;height:70px;background:#1D4ED8;border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
 .vending .vending-window{position:absolute;left:4px;top:6px;right:4px;height:36px;background:#DCE5FA;border-radius:2px;overflow:hidden}
 .vending .vending-window::after{content:"";position:absolute;left:2px;right:2px;top:6px;height:1.5px;background:#93A5C9;box-shadow:0 6px 0 #93A5C9,0 12px 0 #93A5C9,0 18px 0 #93A5C9,0 24px 0 #93A5C9}
 .vending .vending-slot{position:absolute;left:6px;right:6px;bottom:6px;height:10px;background:#0F2A9E;border-radius:2px}
@@ -309,7 +309,7 @@ body{
           <div class="cbook" style="left:39px;width:8px;height:22px;background:var(--cm)"></div>
           <div class="cbook" style="left:54px;width:11px;height:15px;background:var(--ct)"></div>
         </div>
-        <div class="plant-leaf" style="left:430px;top:324px;"></div><div class="plant-pot" style="left:428px;top:352px;"></div>
+        <div class="plant-leaf" style="left:430px;top:374px;"></div><div class="plant-pot" style="left:428px;top:402px;"></div>
         <div class="coffee-machine"></div>
         <div class="plant-leaf"></div><div class="plant-pot"></div>
         <div class="sofa">
@@ -321,10 +321,10 @@ body{
           <div class="vending-slot"></div>
         </div>
         <div class="meeting-table"></div>
-        <div class="chair face-down" style="left:516px;top:224px;"><div class="back"></div><div class="seat"></div></div>
-        <div class="chair face-down" style="left:604px;top:224px;"><div class="back"></div><div class="seat"></div></div>
-        <div class="chair face-up" style="left:516px;top:312px;"><div class="back"></div><div class="seat"></div></div>
-        <div class="chair face-up" style="left:604px;top:312px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-down" style="left:516px;top:274px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-down" style="left:604px;top:274px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-up" style="left:516px;top:362px;"><div class="back"></div><div class="seat"></div></div>
+        <div class="chair face-up" style="left:604px;top:362px;"><div class="back"></div><div class="seat"></div></div>
         <!-- desks injected by JS -->
       </div>
     </div>
@@ -444,22 +444,20 @@ body{
 </div>
 
 <script>
-// 渡部が一番端（左端の席）。太田さんは女性キャラクター。
+// 渡部は社長で、席は1対3(渡部が正面/横井・上浦・太田が向き合う形)。太田さんは女性キャラクター。
 const PEOPLE = [
-  { key: '渡部', color: '#3A5EE5', ch: '渡', role: 'FS', deskX: 90, suit: true, email: 'yusuke-watabe@gmotech.jp' },
-  { key: '横井', color: '#1A7A50', ch: '横', role: 'FS', deskX: 260, suit: true },
-  { key: '上浦', color: '#C0253A', ch: '上', role: 'IS', deskX: 430 },
-  { key: '太田', color: '#6B35C8', ch: '太', role: 'IS', deskX: 600, female: true }
+  { key: '渡部', color: '#3A5EE5', ch: '渡', role: '社長', deskX: 350, deskY: 16, standY: 90, suit: true, email: 'yusuke-watabe@gmotech.jp' },
+  { key: '横井', color: '#1A7A50', ch: '横', role: 'FS', deskX: 180, deskY: 111, standY: 185, suit: true },
+  { key: '上浦', color: '#C0253A', ch: '上', role: 'IS', deskX: 350, deskY: 111, standY: 185 },
+  { key: '太田', color: '#6B35C8', ch: '太', role: 'IS', deskX: 520, deskY: 111, standY: 185, female: true }
 ];
-const DESK_Y = 56;
-const STAND_Y = 130;
-const CELEBRATE_SPOT = { x: 90, y: 260 };
+const CELEBRATE_SPOT = { x: 90, y: 310 };
 const SPEED = 60; // px/sec
 
 // 会議室の4脚それぞれの着席位置(人物のtransformは足元=bottom-centerを基準にしている)
 const MEETING_SEATS = [
-  { x: 528, y: 246 }, { x: 616, y: 246 },
-  { x: 528, y: 334 }, { x: 616, y: 334 }
+  { x: 528, y: 296 }, { x: 616, y: 296 },
+  { x: 528, y: 384 }, { x: 616, y: 384 }
 ];
 const usedMeetingSeats = new Set();
 const CALENDAR_PEOPLE = PEOPLE.filter(p => p.email); // 現状はカレンダー連携する人だけ(渡部)
@@ -630,7 +628,7 @@ function buildRoom() {
     const deskEl = document.createElement('div');
     deskEl.className = 'furniture-desk';
     deskEl.style.left = (p.deskX - 48) + 'px';
-    deskEl.style.top = DESK_Y + 'px';
+    deskEl.style.top = p.deskY + 'px';
     deskEl.innerHTML = `<div class="surface"></div><div class="monitor"></div><div class="label">${p.key}</div>`;
     room.appendChild(deskEl);
 
@@ -664,8 +662,8 @@ function buildRoom() {
       def: p,
       el: personEl,
       legendEl,
-      x: p.deskX, y: STAND_Y,
-      targetX: p.deskX, targetY: STAND_Y,
+      x: p.deskX, y: p.standY,
+      targetX: p.deskX, targetY: p.standY,
       mood: 'idle',
       celebrateUntil: 0,
       prevCount: 0,
@@ -783,10 +781,10 @@ function tick(ts) {
 
     if (!c.celebrateUntil) {
       if (c.inMeeting) {
-        const seat = c.meetingSeat != null ? MEETING_SEATS[c.meetingSeat] : { x: 572, y: 300 };
+        const seat = c.meetingSeat != null ? MEETING_SEATS[c.meetingSeat] : { x: 572, y: 350 };
         c.targetX = seat.x; c.targetY = seat.y;
       } else {
-        c.targetX = p.deskX; c.targetY = STAND_Y;
+        c.targetX = p.deskX; c.targetY = p.standY;
       }
     }
 
