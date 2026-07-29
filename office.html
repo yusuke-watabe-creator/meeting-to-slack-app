@@ -104,7 +104,6 @@ body{
 .cabinet .cbook{position:absolute;bottom:4px;border-radius:1px}
 
 .zone{position:absolute;border-radius:10px;display:flex;flex-direction:column}
-.zone-label{position:absolute;top:6px;left:10px;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;z-index:2}
 .zone-break{left:16px;top:170px;width:210px;height:220px;background:#EAF3DE;border:2px dashed #C3D9A0}
 .zone-meeting{left:460px;top:170px;width:224px;height:220px;background:#EEF0FC;border:2px dashed #C3CCF2}
 
@@ -262,9 +261,9 @@ body{
 <body>
 
 <div class="page-nav">
+  <span class="pn-item active"><span class="pn-icon">🏢</span>オフィス</span>
   <a href="index.html" class="pn-item"><span class="pn-icon">📝</span>商談メモ</a>
   <a href="tasks.html" class="pn-item"><span class="pn-icon">✅</span>タスク管理</a>
-  <span class="pn-item active"><span class="pn-icon">🏢</span>オフィス</span>
   <a href="orders.html" class="pn-item"><span class="pn-icon">📦</span>資料作成会社</a>
 </div>
 
@@ -300,8 +299,8 @@ body{
       </div>
       <div class="room" id="room">
         <div class="floor-contact-shadow"></div>
-        <div class="zone zone-break"><span class="zone-label">休憩スペース</span></div>
-        <div class="zone zone-meeting"><span class="zone-label">会議室</span></div>
+        <div class="zone zone-break"></div>
+        <div class="zone zone-meeting"></div>
         <div class="cabinet">
           <div class="shelf-line" style="top:40px;"></div>
           <div class="shelf-line" style="top:80px;"></div>
@@ -337,7 +336,7 @@ body{
   <div class="stage-card">
     <div class="sub-header">
       <div>
-        <div class="sub-title">🪚 MEO資料作成会社（下請け）</div>
+        <div class="sub-title">🪚 MEO資料作成会社</div>
         <div class="sub-sub">資料作成専門の職人が一人で切り盛りしています</div>
       </div>
       <a href="orders.html" class="nav-link">発注管理を開く →</a>
