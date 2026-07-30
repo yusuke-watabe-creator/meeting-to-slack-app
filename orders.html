@@ -67,18 +67,15 @@ body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#fdeee0 
 .search-bar{padding:12px 20px 0}
 .search-inp{width:100%;max-width:360px;padding:9px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:13px;outline:none;background:var(--surface)}
 .search-inp:focus{border-color:#B4690E}
-.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 20px;align-items:start}
+.kanban{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:14px 20px;align-items:start}
 .col{background:var(--surface2);border-radius:var(--r16);overflow:hidden;border:1px solid var(--border)}
 .col-header{padding:13px 14px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid transparent}
-.col-ordered .col-header{border-color:var(--cn);background:linear-gradient(135deg,#DCE3FA,#eef1fd)}
 .col-progress .col-header{border-color:var(--amber);background:linear-gradient(135deg,#FBE7C6,#fdf3e2)}
 .col-delivered .col-header{border-color:var(--green);background:linear-gradient(135deg,#D4EDE0,#e9f6ee)}
-.col-ordered .card{border-left:3px solid var(--cn)}
 .col-progress .card{border-left:3px solid var(--amber)}
 .col-delivered .card{border-left:3px solid var(--green)}
 .col-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .col-cnt{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;font-weight:700}
-.col-ordered .col-cnt{background:#c7d7ff;color:var(--cn)}
 .col-progress .col-cnt{background:#f5d9a3;color:var(--amber)}
 .col-delivered .col-cnt{background:#a7f3d0;color:var(--green)}
 .col-body{padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px}
@@ -160,7 +157,6 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 <div class="stats-bar">
   <div class="stat" style="--stat-bg:#e6ebfb"><span class="dot" style="background:var(--accent)"></span>合計 <span class="num" id="stAll">0</span> 件</div>
   <div class="sep"></div>
-  <div class="stat" style="--stat-bg:#dce3fa"><span class="dot" style="background:var(--cn)"></span>受注 <span class="num" id="stOrdered">0</span></div>
   <div class="stat" style="--stat-bg:#fbecd2"><span class="dot" style="background:var(--amber)"></span>作成中 <span class="num" id="stProgress">0</span></div>
   <div class="stat" style="--stat-bg:#d4ede0"><span class="dot" style="background:var(--green)"></span>納品済み <span class="num" id="stDelivered">0</span></div>
 </div>
@@ -170,13 +166,6 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.5}
 </div>
 
 <div class="kanban" id="kanban">
-  <div class="col col-ordered">
-    <div class="col-header">
-      <div class="col-title">📥 受注</div>
-      <span class="col-cnt" id="cnt-ordered">0</span>
-    </div>
-    <div class="col-body" id="col-ordered"></div>
-  </div>
   <div class="col col-progress">
     <div class="col-header">
       <div class="col-title">🛠️ 作成中</div>
@@ -271,8 +260,7 @@ const AVATAR_COLOR = { "渡部": "#3A5EE5", "横井": "#1A7A50", "上浦": "#C02
 
 function updateStats() {
   document.getElementById("stAll").textContent = orders.length;
-  document.getElementById("stOrdered").textContent = orders.filter(o => o.status === "ordered").length;
-  document.getElementById("stProgress").textContent = orders.filter(o => o.status === "in_progress").length;
+  document.getElementById("stProgress").textContent = orders.filter(o => o.status !== "delivered").length;
   document.getElementById("stDelivered").textContent = orders.filter(o => o.status === "delivered").length;
 }
 
@@ -281,11 +269,10 @@ function renderBoard() {
   const q = document.getElementById("q").value.trim().toLowerCase();
   const filtered = q ? orders.filter(o => (o.clientName || "").toLowerCase().includes(q)) : orders;
 
-  const ordered = filtered.filter(o => o.status === "ordered").sort((a, b) => a.createdAt - b.createdAt);
-  const progress = filtered.filter(o => o.status === "in_progress").sort((a, b) => a.createdAt - b.createdAt);
+  // 「受注」ステージは廃止。発注は即「作成中」として扱う(旧データにordered状態が残っていても作成中扱いにする)。
+  const progress = filtered.filter(o => o.status !== "delivered").sort((a, b) => a.createdAt - b.createdAt);
   const delivered = filtered.filter(o => o.status === "delivered").sort((a, b) => (b.deliveredAt || 0) - (a.deliveredAt || 0));
 
-  renderCol("col-ordered", "cnt-ordered", ordered, "発注はまだありません");
   renderCol("col-progress", "cnt-progress", progress, "作成中の資料はありません");
   renderCol("col-delivered", "cnt-delivered", delivered, q ? "該当する資料が見つかりません" : "まだ納品物はありません");
 }
@@ -340,7 +327,7 @@ function saveOrderForm() {
     clientName: name,
     brief,
     requestedBy,
-    status: "ordered",
+    status: "in_progress",
     fileUrl: null,
     fileName: null,
     deliveredAt: null
@@ -349,7 +336,7 @@ function saveOrderForm() {
 }
 document.getElementById("fn").addEventListener("keydown", e => { if (e.key === "Enter") saveOrderForm(); });
 
-const STATUS_LABEL = { ordered: "📥 受注", in_progress: "🛠️ 作成中", delivered: "✅ 納品済み" };
+const STATUS_LABEL = { in_progress: "🛠️ 作成中", delivered: "✅ 納品済み" };
 function openDetail(id) {
   const o = orders.find(o => o.id === id); if (!o) return;
   const color = AVATAR_COLOR[o.requestedBy] || "#9B99A4";
@@ -371,13 +358,10 @@ function openDetail(id) {
 
   const actions = document.getElementById("d-actions");
   let html = `<button class="btn btn-ghost" onclick="closeDetail()">閉じる</button>`;
-  if (o.status === "ordered") {
-    html += `<button class="btn btn-primary" onclick="setStatus(${o.id},'in_progress')">🛠️ 作成中にする</button>`;
-  } else if (o.status === "in_progress") {
-    html += `<button class="btn btn-ghost" onclick="setStatus(${o.id},'ordered')">← 受注に戻す</button>`;
-    html += `<button class="btn btn-primary" onclick="openDeliver(${o.id})">✅ 納品する</button>`;
-  } else if (o.status === "delivered") {
+  if (o.status === "delivered") {
     html += `<button class="btn btn-ghost" onclick="setStatus(${o.id},'in_progress')">← 作成中に戻す</button>`;
+  } else {
+    html += `<button class="btn btn-primary" onclick="openDeliver(${o.id})">✅ 納品する</button>`;
   }
   actions.innerHTML = html;
 
