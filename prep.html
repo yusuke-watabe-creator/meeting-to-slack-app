@@ -82,16 +82,7 @@ body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#e3f1f5 
 .check-row{display:flex;align-items:center;gap:8px;font-size:12.5px}
 .check-row input[type="checkbox"]{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0}
 .check-row input[type="text"]{flex:1;max-width:130px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font)}
-.news-item{border-bottom:1px solid var(--border);padding:10px 0}
-.news-item:last-child{border-bottom:none;padding-bottom:0}
-.news-title{font-size:13.5px;font-weight:600;margin-bottom:3px}
-.news-title a{color:var(--text);text-decoration:none}
-.news-title a:hover{color:var(--accent);text-decoration:underline}
-.news-meta{font-size:11px;color:var(--text3);margin-bottom:4px}
-.news-summary{font-size:12.5px;color:var(--text2);line-height:1.5}
 .empty-note{font-size:12.5px;color:var(--text3);text-align:center;padding:14px 0}
-.sources-list{font-size:11.5px;color:var(--text3);line-height:1.8;word-break:break-all}
-.sources-list a{color:var(--text3)}
 
 .talk-output{background:var(--surface2);border-radius:var(--r8);padding:14px 15px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;margin-top:12px;display:none}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -119,7 +110,7 @@ body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#e3f1f5 
 
 <div class="wrap">
   <div class="disclaimer">
-    ⚠️ 表示内容はAI(Web検索ベース)による推定情報です。正式な数値・事実確認は必ず公式サイト・IR資料等の一次情報でご確認ください。
+    ⚠️ 表示内容はAIの学習知識だけをもとにした推定情報です(リアルタイムのWeb検索は行っていません)。特に店舗数・最新の競合状況・住所などは古い可能性があります。正式な数値・事実確認は必ず公式サイト・IR資料・Googleマップ等の一次情報でご確認ください。業界ニュースはこの仕組みでは扱えないため表示されません。
   </div>
 
   <div class="card">
@@ -161,16 +152,6 @@ body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#e3f1f5 
       <div class="card-title">MEO対策状況(店舗別)</div>
       <div class="meo-summary" id="r-meo-summary"></div>
       <div id="r-stores"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">業界ニュース(直近6ヶ月)</div>
-      <div id="r-news"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">参照した主な情報源</div>
-      <div class="sources-list" id="r-sources"></div>
     </div>
 
     <div class="card">
@@ -234,7 +215,7 @@ async function runAnalysis() {
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
   setStatus(statusEl, '', 'pending');
-  statusEl.innerHTML = '<span class="spinner"></span>Web検索しながら分析しています…(数十秒かかります)';
+  statusEl.innerHTML = '<span class="spinner"></span>AIが分析しています…';
   document.getElementById('results').style.display = 'none';
 
   try {
@@ -301,20 +282,6 @@ function renderResults(a) {
       </div>
     </div>`;
   }).join('') : '<div class="empty-note">店舗情報は見つかりませんでした</div>';
-
-  const news = Array.isArray(a.industry_news) ? a.industry_news : [];
-  document.getElementById('r-news').innerHTML = news.length ? news.map(n => `
-    <div class="news-item">
-      <div class="news-title">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>` : esc(n.title)}</div>
-      <div class="news-meta">${esc(n.date || '')}${n.date && n.source ? ' ・ ' : ''}${esc(n.source || '')}</div>
-      <div class="news-summary">${esc(n.summary || '')}</div>
-    </div>
-  `).join('') : '<div class="empty-note">直近6ヶ月以内の関連ニュースは見つかりませんでした</div>';
-
-  const sources = Array.isArray(a.sources) ? a.sources : [];
-  document.getElementById('r-sources').innerHTML = sources.length
-    ? sources.map(u => `<div><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></div>`).join('')
-    : '<div class="empty-note">情報源は記録されませんでした</div>';
 }
 
 function setCheck(storeIndex, field, value) {

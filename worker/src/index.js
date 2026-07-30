@@ -261,34 +261,34 @@ function todayJa() {
   return new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// 商談前企業分析: Gemini組み込みのGoogle検索グラウンディングでWeb調査させ、構造化JSONで返す。
+// 商談前企業分析: Web検索は使わず、Gemini自身の知識のみから構造化JSONで回答させる。
+// (Gemini APIのGoogle検索グラウンディングは無料枠では利用できず429エラーになるため、
+//  課金設定なしで動かせるこの方式に変更。最新情報の精度はWeb検索版より劣る点に注意。)
 async function handleCompanyAnalysis(env, input) {
   const prompt = `あなたはBtoB営業(MEO対策サービス)のための企業リサーチアシスタントです。
-Google検索を使って、与えられた企業(URLまたは社名)について調査し、以下のJSON形式のみで出力してください。
+Web検索は使えません。あなたが学習済みの知識の範囲だけで、与えられた企業(URLまたは社名)について分かることを、以下のJSON形式のみで出力してください。
 説明文・前置き・Markdownのコードフェンスは一切不要です。JSONオブジェクトのみを、改行やインデントを入れず1行の圧縮形式で返してください。
 
 制約(必ず守ってください。出力が長すぎると打ち切られるため厳守):
-- competitorsは最大3件まで、sourcesは最大3件まで
-- storesは主要拠点を3件まで(例:都心の旗艦店・郊外店・地方主要都市店など、エリアが分散するように選ぶ)
-- industry_newsは、対象企業が属する業界の直近ニュース・トレンドを3件まで(対象企業自体のプレスリリースより、業界全体の動き・規制・トレンドを優先。ただし対象企業自身の重要ニュース(出店・資金調達等)があれば1件含めてよい)。必ず新しい日付順(降順)に並べる。本日(${todayJa()})から遡って6ヶ月以内に公開された記事のみを対象とし、6ヶ月より古い記事は絶対に含めないこと。6ヶ月以内で条件に合う記事が3件に満たない場合は、無理に古い記事で埋めず件数を減らしてよい(0件の場合は空配列[]を返す)
-- 各newsには記事の実際のURLをurlに入れる。URLが特定できない場合はその記事はindustry_newsに含めない
+- Web検索ができないため、確信が持てない情報は無理に埋めず "不明" と記入すること。特に店舗数の正確な数字・直近の競合動向・住所の細部は、学習データが古い可能性が高いため、確信がなければ"不明"にする
+- store_count.confidenceは、よほど有名で学習データにも繰り返し登場する企業でない限り"low"にする(最新の正確な数値は保証できないため)
+- competitorsは最大3件まで
+- storesは主要拠点を3件まで(例:都心の旗艦店・郊外店・地方主要都市店など、エリアが分散するように選ぶ)。学習データから店舗の詳細が分からない場合は、name/areaのみ埋めてaddressは"不明"にしてよい
+- industry_newsは常に空配列[]を返すこと(Web検索なしでは「直近6ヶ月以内」を正確に判定できず、古い情報を最新ニュースとして誤って出す危険があるため)
+- sourcesは常に空配列[]を返すこと(Web検索していないため参照元URLは存在しない)
 - business, overall_assessment, opportunityはそれぞれ全角40文字以内
-- citation_consistency, structured_data_signalは先頭に判定記号(◎/○/△/✕/不明のいずれか1文字)+半角スペース+全角20文字以内の短評
-  - citation_consistency: 食べログ・ホットペッパー・エキテン・Instagram等での店名・住所表記の一致度から判定
-  - structured_data_signal: 検索結果にリッチスニペット(星評価・営業時間・パンくず等)が表示されているかで判定。確認できなければ"不明"
+- citation_consistency, structured_data_signalは常に"不明"にする(Web上の実際の表示を確認できないため)
 - reasonは全角25文字以内
-- newsのtitleは全角30文字以内、summaryは全角40文字以内、dateはわかる範囲で(例:2026年6月)、sourceはメディア名
-- 情報が確認できない項目は "不明" と記入し、推測で断定しない
 - 店舗数・競合・店舗情報は日本国内を優先
 
 出力JSONスキーマ(キー名はこの通りに):
-{"company_name":"正式な会社名","overview":{"industry":"業種","founded":"設立年","hq":"本社所在地","business":"事業内容要約"},"store_count":{"estimate":"店舗数推定値","areas":"主な展開エリア","confidence":"high/medium/lowのいずれか"},"competitors":[{"name":"競合企業名","reason":"競合と判断した理由"}],"meo_status":{"overall_assessment":"総合評価","opportunity":"営業提案の切り口","stores":[{"name":"店舗名","area":"エリア","address":"住所(わかれば)","citation_consistency":"判定記号+短評","structured_data_signal":"判定記号+短評"}]},"industry_news":[{"title":"見出し","summary":"要点","date":"時期","source":"媒体名","url":"記事URL"}],"sources":["URL"]}
+{"company_name":"正式な会社名","overview":{"industry":"業種","founded":"設立年","hq":"本社所在地","business":"事業内容要約"},"store_count":{"estimate":"店舗数推定値","areas":"主な展開エリア","confidence":"high/medium/lowのいずれか"},"competitors":[{"name":"競合企業名","reason":"競合と判断した理由"}],"meo_status":{"overall_assessment":"総合評価","opportunity":"営業提案の切り口","stores":[{"name":"店舗名","area":"エリア","address":"住所(わかれば。不明なら不明)","citation_consistency":"不明","structured_data_signal":"不明"}]},"industry_news":[],"sources":[]}
 
 対象企業: ${input}
 本日の日付: ${todayJa()}
-上記企業についてGoogle検索を行い、指定のJSON形式で出力してください。業界ニュースは本日の日付を基準に、できるだけ新しいものを優先して検索してください。`;
+あなたの知識の範囲で、指定のJSON形式で出力してください。分からない項目は正直に"不明"としてください。`;
 
-  const geminiRes = await callGeminiWithRetry(env, prompt, { useSearch: true });
+  const geminiRes = await callGeminiWithRetry(env, prompt);
   if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
 
   const data = await geminiRes.json();
