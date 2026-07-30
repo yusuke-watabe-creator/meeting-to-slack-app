@@ -14,6 +14,7 @@ const TASK_BOARD_CONFIG = {
 // SlackメンションのassigneeId → タスクボードの担当者名（渡部/横井/上浦/太田）
 const TASK_BOARD_ASSIGNEE = {
   '': '渡部',
+  'WATABE': '渡部',
   'U07TZQ8718C': '横井',
   'U06BHSCK811': '太田',
   'U06C6P5EW3A': '上浦'

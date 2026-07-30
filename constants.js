@@ -4,6 +4,7 @@ window.APP_CONSTANTS = {
   REQUIRED_CC: 'sem-sales@gmotech.jp',
   ASSIGNEES: [
     { id: '', label: '指定なし', mention: '' },
+    { id: 'WATABE', label: '渡部さん', mention: '@渡部' },
     { id: 'U07TZQ8718C', label: '横井 優一さん', mention: '@横井優一' },
     { id: 'U06BHSCK811', label: '太田 小百合さん', mention: '@太田小百合' },
     { id: 'U06C6P5EW3A', label: '上浦 諒大さん', mention: '@上浦諒大' }

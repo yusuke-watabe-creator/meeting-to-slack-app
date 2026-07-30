@@ -19,9 +19,17 @@ function buildDealMemoBody({ dealName, dealDate, nextAction, prepItems, dealFeed
 }
 
 // Slack Incoming Webhook投稿用。<@USERID>形式はSlack側で実際のメンションに展開される。
+// 実際のSlackユーザーID(Uで始まる)を持たない担当者(例: 渡部)は、代わりに読める「@名前」形式にする。
 function buildSlackMessage(fields) {
   const lines = [];
-  if (fields.assigneeId) lines.push('<@' + fields.assigneeId + '>');
+  if (fields.assigneeId) {
+    if (/^U[A-Z0-9]+$/.test(fields.assigneeId)) {
+      lines.push('<@' + fields.assigneeId + '>');
+    } else {
+      const assignee = window.APP_CONSTANTS.ASSIGNEES.find(a => a.id === fields.assigneeId);
+      if (assignee && assignee.mention) lines.push(assignee.mention);
+    }
+  }
   lines.push(buildDealMemoBody(fields));
   return lines.join('\n');
 }
