@@ -35,72 +35,6 @@ function extractJson(text) {
   }
 }
 
-// テキスト全体を1回だけ走査し、各文字位置での「文字列リテラルの内側かどうか」と
-// 「その時点で開いている{}/[]をどう閉じれば良いか」を前計算しておく。
-// (truncateJsonRepair側で末尾から候補位置を探す際にO(1)で参照するため)
-function analyzeJsonStructure(text) {
-  const inStringBefore = new Array(text.length + 1);
-  const stackBefore = new Array(text.length + 1);
-  let inString = false;
-  let escaped = false;
-  let stack = [];
-  for (let i = 0; i <= text.length; i++) {
-    inStringBefore[i] = inString;
-    stackBefore[i] = stack.slice();
-    if (i === text.length) break;
-    const ch = text[i];
-    if (escaped) { escaped = false; continue; }
-    if (ch === '\\') { escaped = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
-    else if (ch === '}' || ch === ']') { if (stack.length) stack.pop(); }
-  }
-  return { inStringBefore, stackBefore };
-}
-
-// max_tokens打ち切り等でJSONが途中で切れているケースの自己修復。
-// 末尾から少しずつ削り、文字列リテラルの途中でないカット位置を見つけたら、
-// 開いたままの{}/[]を正しい順序で閉じて再度JSON.parseを試す。
-function repairTruncatedJson(cleaned) {
-  const { inStringBefore, stackBefore } = analyzeJsonStructure(cleaned);
-  const maxTrim = Math.min(cleaned.length, 600);
-  for (let cut = cleaned.length; cut > 0 && cleaned.length - cut < maxTrim; cut--) {
-    if (inStringBefore[cut]) continue;
-    const candidate = cleaned.slice(0, cut).replace(/[\s,:]+$/, '');
-    if (!candidate) continue;
-    const stack = stackBefore[cut];
-    if (!stack || !stack.length) continue;
-    const closing = stack.slice().reverse().join('');
-    try {
-      return JSON.parse(candidate + closing);
-    } catch (e) {
-      continue;
-    }
-  }
-  return null;
-}
-
-// extractJsonに加えて、途中で切れたJSONの自己修復も試みる版。
-function extractJsonRobust(text) {
-  if (!text) return null;
-  let cleaned = String(text).trim();
-  cleaned = cleaned.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-  const start = cleaned.indexOf('{');
-  if (start === -1) return null;
-  cleaned = cleaned.slice(start);
-
-  const end = cleaned.lastIndexOf('}');
-  if (end !== -1) {
-    try {
-      return JSON.parse(cleaned.slice(0, end + 1));
-    } catch (e) {
-      // fall through to repair
-    }
-  }
-  return repairTruncatedJson(cleaned);
-}
-
 function stripCodeFence(text) {
   return String(text || '')
     .trim()
@@ -111,10 +45,7 @@ function stripCodeFence(text) {
 
 // 混雑時(503/429)は一時的なことが多いため、間隔を空けながら複数回試す。
 // 同じモデルで数回試してもダメなら、より軽量なモデル(flash-lite)にも切り替えてみる。
-// options.useSearch=true にすると、Gemini組み込みのGoogle検索グラウンディングを有効にする
-// (Anthropicのweb_searchツールに相当。追加のAPIキーや課金設定は不要、Gemini無料枠の範囲)。
-async function callGeminiWithRetry(env, prompt, options) {
-  const useSearch = !!(options && options.useSearch);
+async function callGeminiWithRetry(env, prompt) {
   const callGemini = (model) =>
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
@@ -124,7 +55,6 @@ async function callGeminiWithRetry(env, prompt, options) {
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
       }),
     });
 
@@ -257,105 +187,6 @@ ${prepItems}`;
   return jsonResponse({ items });
 }
 
-function todayJa() {
-  return new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-// 商談前企業分析: Web検索は使わず、Gemini自身の知識のみから構造化JSONで回答させる。
-// (Gemini APIのGoogle検索グラウンディングは無料枠では利用できず429エラーになるため、
-//  課金設定なしで動かせるこの方式に変更。最新情報の精度はWeb検索版より劣る点に注意。)
-async function handleCompanyAnalysis(env, input) {
-  const prompt = `あなたはBtoB営業(MEO対策サービス)のための企業リサーチアシスタントです。
-Web検索は使えません。あなたが学習済みの知識の範囲だけで、与えられた企業(URLまたは社名)について分かることを、以下のJSON形式のみで出力してください。
-説明文・前置き・Markdownのコードフェンスは一切不要です。JSONオブジェクトのみを、改行やインデントを入れず1行の圧縮形式で返してください。
-
-制約(必ず守ってください。出力が長すぎると打ち切られるため厳守):
-- Web検索ができないため、確信が持てない情報は無理に埋めず "不明" と記入すること。特に店舗数の正確な数字・直近の競合動向・住所の細部は、学習データが古い可能性が高いため、確信がなければ"不明"にする
-- store_count.confidenceは、よほど有名で学習データにも繰り返し登場する企業でない限り"low"にする(最新の正確な数値は保証できないため)
-- competitorsは最大3件まで
-- storesは主要拠点を3件まで(例:都心の旗艦店・郊外店・地方主要都市店など、エリアが分散するように選ぶ)。学習データから店舗の詳細が分からない場合は、name/areaのみ埋めてaddressは"不明"にしてよい
-- industry_newsは常に空配列[]を返すこと(Web検索なしでは「直近6ヶ月以内」を正確に判定できず、古い情報を最新ニュースとして誤って出す危険があるため)
-- sourcesは常に空配列[]を返すこと(Web検索していないため参照元URLは存在しない)
-- business, overall_assessment, opportunityはそれぞれ全角40文字以内
-- citation_consistency, structured_data_signalは常に"不明"にする(Web上の実際の表示を確認できないため)
-- reasonは全角25文字以内
-- 店舗数・競合・店舗情報は日本国内を優先
-
-出力JSONスキーマ(キー名はこの通りに):
-{"company_name":"正式な会社名","overview":{"industry":"業種","founded":"設立年","hq":"本社所在地","business":"事業内容要約"},"store_count":{"estimate":"店舗数推定値","areas":"主な展開エリア","confidence":"high/medium/lowのいずれか"},"competitors":[{"name":"競合企業名","reason":"競合と判断した理由"}],"meo_status":{"overall_assessment":"総合評価","opportunity":"営業提案の切り口","stores":[{"name":"店舗名","area":"エリア","address":"住所(わかれば。不明なら不明)","citation_consistency":"不明","structured_data_signal":"不明"}]},"industry_news":[],"sources":[]}
-
-対象企業: ${input}
-本日の日付: ${todayJa()}
-あなたの知識の範囲で、指定のJSON形式で出力してください。分からない項目は正直に"不明"としてください。`;
-
-  const geminiRes = await callGeminiWithRetry(env, prompt);
-  if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
-
-  const data = await geminiRes.json();
-  const rawText = extractGeminiText(data);
-  const parsed = extractJsonRobust(rawText);
-  if (!parsed) {
-    const truncated = data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'MAX_TOKENS';
-    return jsonResponse({
-      error: truncated
-        ? '出力が途中で切れており、自動修復もできませんでした。再試行または対象を絞って試してください'
-        : '企業分析結果の解析に失敗しました。再試行してください'
-    }, 502);
-  }
-
-  return jsonResponse({
-    company_name: parsed.company_name || '不明',
-    overview: parsed.overview || {},
-    store_count: parsed.store_count || {},
-    competitors: Array.isArray(parsed.competitors) ? parsed.competitors.slice(0, 3) : [],
-    meo_status: parsed.meo_status || { stores: [] },
-    industry_news: Array.isArray(parsed.industry_news) ? parsed.industry_news.slice(0, 3) : [],
-    sources: Array.isArray(parsed.sources) ? parsed.sources.slice(0, 3) : [],
-  });
-}
-
-// 商談トーク案生成: 企業分析結果+営業担当の手動チェック結果をもとに、Web検索なしでトーク文を生成。
-async function handleSalesTalk(env, analysis, storeChecks) {
-  const storeLines = (analysis.meo_status && Array.isArray(analysis.meo_status.stores) ? analysis.meo_status.stores : [])
-    .map((store) => {
-      const check = (storeChecks || []).find((c) => c.name === store.name) || {};
-      const reply = check.review_reply ? 'あり' : 'なし';
-      const photo = check.photo_owner ? 'あり' : 'なし';
-      const posts = check.recent_posts
-        ? 'あり' + (check.last_post_date ? `(最終投稿: ${check.last_post_date})` : '')
-        : 'なし';
-      return `・${store.name || '店舗'}(${store.area || '不明'})：サイテーション[${store.citation_consistency || '不明'}] / 構造化データ[${store.structured_data_signal || '不明'}] / 口コミ返信[${reply}] / 写真[${photo}] / 最新情報[${posts}]`;
-    })
-    .join('\n');
-
-  const competitorNames = (Array.isArray(analysis.competitors) ? analysis.competitors : [])
-    .map((c) => c.name).filter(Boolean).join('、');
-
-  const prompt = `あなたはMEO対策サービスのトップ営業パーソンです。以下の企業・店舗データをもとに、初回商談の冒頭で使える「つかみトーク」を作成してください。
-
-企業名: ${analysis.company_name || '不明'}
-店舗数: ${(analysis.store_count && analysis.store_count.estimate) || '不明'}（${(analysis.store_count && analysis.store_count.areas) || '不明'}）
-競合: ${competitorNames || '不明'}
-店舗別チェック結果:
-${storeLines || '(店舗情報なし)'}
-
-条件:
-- 日本語、丁寧だが売り込み臭くない自然な話し言葉
-- 具体的な数字・事実(店舗名や最終投稿日など)を最低1つ盛り込み、説得力を持たせる
-- 「詰める」トーンではなく、相手の課題への気づきを促す聞き方を1つ含める
-- 250〜350文字程度
-- 前置きや見出しは不要。トーク本文のみを出力`;
-
-  const geminiRes = await callGeminiWithRetry(env, prompt);
-  if (!geminiRes.ok) return geminiErrorResponse(geminiRes);
-
-  const data = await geminiRes.json();
-  const talk = stripCodeFence(extractGeminiText(data));
-  if (!talk) return jsonResponse({ error: '商談トーク案の生成に失敗しました' }, 502);
-
-  return jsonResponse({ talk });
-}
-
 function geminiErrorResponse(geminiRes) {
   const isCongested = geminiRes.status === 503 || geminiRes.status === 429;
   const hint = isCongested ? '（Geminiが混雑しています。少し時間をおいてもう一度お試しください）' : '';
@@ -391,19 +222,6 @@ export default {
         if (!prepItems) return jsonResponse({ error: '準備するものが空です' }, 400);
         if (prepItems.length > 5000) return jsonResponse({ error: '準備するものが長すぎます' }, 400);
         return await handleSplitPrepItems(env, prepItems);
-      }
-
-      if (type === 'company_analysis') {
-        const input = (body && body.input || '').trim();
-        if (!input) return jsonResponse({ error: '企業名またはURLが空です' }, 400);
-        if (input.length > 300) return jsonResponse({ error: '入力が長すぎます' }, 400);
-        return await handleCompanyAnalysis(env, input);
-      }
-
-      if (type === 'sales_talk') {
-        const analysis = body && body.analysis;
-        if (!analysis || typeof analysis !== 'object') return jsonResponse({ error: '企業分析結果が指定されていません' }, 400);
-        return await handleSalesTalk(env, analysis, Array.isArray(body.storeChecks) ? body.storeChecks : []);
       }
 
       const transcript = (body && body.transcript || '').trim();
