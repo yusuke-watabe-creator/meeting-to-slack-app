@@ -303,6 +303,7 @@ textarea.qinp{resize:vertical;min-height:44px;line-height:1.4}
     <div class="brand-name">株式会社渡部商事</div>
   </div>
   <div style="display:flex;gap:14px;align-items:center;">
+    <button class="cal-btn" onclick="openBroadcastModal()">📢 全員に指示</button>
     <button id="cal-connect-btn" class="cal-btn" onclick="connectCalendar()">📅 カレンダー連携</button>
   </div>
 </div>
@@ -488,6 +489,42 @@ textarea.qinp{resize:vertical;min-height:44px;line-height:1.4}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closePersonModal()">閉じる</button>
       <a class="btn btn-primary" href="tasks.html">タスク管理を開く →</a>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="broadcast-modal" onclick="if(event.target===this)closeBroadcastModal()">
+  <div class="modal">
+    <div class="dh">
+      <div class="dh-name">📢 全員に同じタスクを追加</div>
+      <button class="dc" onclick="closeBroadcastModal()">✕</button>
+    </div>
+    <div class="dh-status" id="broadcast-target-list"></div>
+    <div class="qa-form">
+      <input type="text" class="qinp" id="bc-name" placeholder="タスク名">
+      <textarea class="qinp" id="bc-memo" rows="2" placeholder="詳細（任意）"></textarea>
+      <div class="qa-row">
+        <select class="qsel" id="bc-priority">
+          <option value="">優先度</option>
+          <option value="high">🔴 高</option>
+          <option value="mid">🟡 中</option>
+          <option value="low">🟢 低</option>
+        </select>
+        <input type="date" class="qsel" id="bc-due">
+      </div>
+      <div class="qa-row">
+        <select class="qsel" id="bc-by">
+          <option value="">指示者: 未設定</option>
+          <option value="渡部">指示者: 渡部</option>
+          <option value="横井">指示者: 横井</option>
+          <option value="上浦">指示者: 上浦</option>
+          <option value="太田">指示者: 太田</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBroadcastModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitBroadcast()">全員に追加する</button>
     </div>
   </div>
 </div>
@@ -751,8 +788,58 @@ function quickAddTask() {
   openPersonModal(currentModalKey);
 }
 
+function openBroadcastModal() {
+  document.getElementById('broadcast-target-list').textContent =
+    '追加先: ' + PEOPLE.map(p => p.key).join('・') + '（' + PEOPLE.length + '名）';
+  document.getElementById('bc-name').value = '';
+  document.getElementById('bc-memo').value = '';
+  document.getElementById('bc-priority').value = '';
+  document.getElementById('bc-due').value = '';
+  document.getElementById('broadcast-modal').classList.add('open');
+  setTimeout(() => document.getElementById('bc-name').focus(), 180);
+}
+
+function closeBroadcastModal() {
+  document.getElementById('broadcast-modal').classList.remove('open');
+}
+
+function submitBroadcast() {
+  const nameEl = document.getElementById('bc-name');
+  const name = nameEl.value.trim();
+  if (!name) {
+    nameEl.style.borderColor = 'var(--red, #C0253A)';
+    nameEl.focus();
+    setTimeout(() => nameEl.style.borderColor = '', 1500);
+    return;
+  }
+  const memo = document.getElementById('bc-memo').value.trim();
+  const priority = document.getElementById('bc-priority').value;
+  const due = document.getElementById('bc-due').value;
+  const assignedBy = document.getElementById('bc-by').value;
+  const baseId = Date.now();
+
+  PEOPLE.forEach((p, i) => {
+    const task = {
+      id: baseId + i,
+      createdAt: baseId,
+      name,
+      memo,
+      cat: '',
+      priority,
+      due,
+      dueTime: '',
+      assignee: p.key,
+      assignedBy
+    };
+    allTasks.push(task);
+    fbSetTask(task);
+  });
+
+  closeBroadcastModal();
+}
+
 window.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closePersonModal();
+  if (e.key === 'Escape') { closePersonModal(); closeBroadcastModal(); }
 });
 
 function buildRoom() {
