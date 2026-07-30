@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商談前準備</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0EFE9;--surface:#FFF;--surface2:#EFEDE6;
+  --border:#E2DFD6;--border2:#C9C6BC;
+  --text:#18171A;--text2:#5C5A62;--text3:#9B99A4;
+  --accent:#0E7490;--accent-bg:#E3F1F5;
+  --green:#1A7A50;--green-bg:#E8F5EE;
+  --amber:#A05C00;--amber-bg:#FEF4E3;
+  --red:#C0253A;--red-bg:#FDEAED;
+  --r8:8px;--r12:12px;--r16:16px;
+  --shadow:0 1px 4px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.05);
+  --font:"Instrument Sans",sans-serif;--mono:monospace;
+}
+body{font-family:var(--font);background:radial-gradient(circle at 0% 0%,#e3f1f5 0%,var(--bg) 32%),radial-gradient(circle at 100% 0%,#e6ebfb 0%,var(--bg) 32%),var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-icon{width:28px;height:28px;background:var(--accent);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.brand-name{font-size:15px;font-weight:600}
+.brand-sub{font-size:11.5px;color:var(--text3)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r8);font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .14s;text-decoration:none}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
+.btn-primary:disabled{background:var(--border2);cursor:not-allowed;filter:none}
+.btn-ghost{background:var(--surface2);color:var(--text2)}.btn-ghost:hover{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+
+.page-nav{position:fixed;top:78px;right:18px;z-index:60;display:flex;flex-direction:column;gap:10px}
+.pn-item{display:flex;align-items:center;gap:9px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:11px 18px 11px 14px;font-size:13.5px;font-weight:600;color:var(--text2);text-decoration:none;box-shadow:0 3px 10px rgba(0,0,0,.09);transition:all .15s;white-space:nowrap}
+.pn-item:hover{border-color:var(--accent);color:var(--accent);transform:translateX(-3px)}
+.pn-item.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(14,116,144,.35);cursor:default}
+.pn-icon{font-size:18px;line-height:1}
+@media (max-width:1300px){.page-nav{position:static;flex-direction:row;flex-wrap:wrap;justify-content:center;margin:10px 20px 0}}
+
+.wrap{max-width:760px;margin:0 auto;padding:20px 20px 60px}
+.disclaimer{font-size:12px;color:var(--text2);background:var(--amber-bg);border:1px solid #F0DBB0;border-radius:var(--r8);padding:10px 13px;margin-bottom:16px;line-height:1.6}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:12px}
+.inp{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--r8);font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .14s}
+.inp:focus{border-color:var(--accent)}
+.input-row{display:flex;gap:10px}
+.input-row .inp{flex:1}
+.status-line{font-size:12.5px;margin-top:10px;min-height:16px}
+.status-line.err{color:var(--red)}
+.status-line.pending{color:var(--text2)}
+.status-line.ok{color:var(--green)}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.results{display:none}
+.co-name{font-size:19px;font-weight:700;margin-bottom:10px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.di{background:var(--surface2);border-radius:var(--r8);padding:9px 12px}
+.dilbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:3px}
+.dival{font-size:13.5px;font-weight:500;line-height:1.5}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;font-family:var(--mono)}
+.badge-high{background:var(--green-bg);color:var(--green)}
+.badge-medium{background:var(--amber-bg);color:var(--amber)}
+.badge-low{background:var(--red-bg);color:var(--red)}
+.tags{display:flex;flex-wrap:wrap;gap:7px}
+.comp-tag{background:var(--surface2);border-radius:var(--r8);padding:7px 11px;font-size:12.5px}
+.comp-tag b{font-weight:700}
+.comp-tag span{color:var(--text2)}
+.meo-summary{background:var(--accent-bg);border-radius:var(--r8);padding:11px 13px;margin-bottom:14px;font-size:13px;line-height:1.7}
+.meo-summary b{color:var(--accent)}
+.store-card{border:1px solid var(--border);border-radius:var(--r12);padding:13px 14px;margin-bottom:10px}
+.store-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.store-name{font-size:14px;font-weight:700}
+.store-area{font-size:11.5px;color:var(--text3)}
+.store-sig-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.sig-tag{font-size:11px;background:var(--surface2);border-radius:20px;padding:3px 9px;color:var(--text2)}
+.maps-link{font-size:12px;color:var(--accent);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;margin-bottom:10px}
+.maps-link:hover{text-decoration:underline}
+.manual-check{background:var(--surface2);border-radius:var(--r8);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.check-row{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.check-row input[type="checkbox"]{width:15px;height:15px;accent-color:var(--accent);flex-shrink:0}
+.check-row input[type="text"]{flex:1;max-width:130px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font)}
+.news-item{border-bottom:1px solid var(--border);padding:10px 0}
+.news-item:last-child{border-bottom:none;padding-bottom:0}
+.news-title{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.news-title a{color:var(--text);text-decoration:none}
+.news-title a:hover{color:var(--accent);text-decoration:underline}
+.news-meta{font-size:11px;color:var(--text3);margin-bottom:4px}
+.news-summary{font-size:12.5px;color:var(--text2);line-height:1.5}
+.empty-note{font-size:12.5px;color:var(--text3);text-align:center;padding:14px 0}
+.sources-list{font-size:11.5px;color:var(--text3);line-height:1.8;word-break:break-all}
+.sources-list a{color:var(--text3)}
+
+.talk-output{background:var(--surface2);border-radius:var(--r8);padding:14px 15px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;margin-top:12px;display:none}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="page-nav">
+  <a href="office.html" class="pn-item"><span class="pn-icon">🏢</span>オフィス</a>
+  <a href="index.html" class="pn-item"><span class="pn-icon">📝</span>商談メモ</a>
+  <a href="tasks.html" class="pn-item"><span class="pn-icon">✅</span>タスク管理</a>
+  <a href="orders.html" class="pn-item"><span class="pn-icon">📦</span>資料作成会社</a>
+  <span class="pn-item active"><span class="pn-icon">🔍</span>商談前準備</span>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">&#128269;</div>
+    <div>
+      <div class="brand-name">商談前準備</div>
+      <div class="brand-sub">資料作成会社 内 - AIによる商談前企業リサーチ</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="disclaimer">
+    ⚠️ 表示内容はAI(Web検索ベース)による推定情報です。正式な数値・事実確認は必ず公式サイト・IR資料等の一次情報でご確認ください。
+  </div>
+
+  <div class="card">
+    <div class="card-title">企業を分析する</div>
+    <div class="input-row">
+      <input type="text" class="inp" id="company-input" placeholder="企業名またはURL（例: 株式会社〇〇 / https://example.co.jp）">
+      <button class="btn btn-primary" id="analyze-btn" onclick="runAnalysis()">🔍 企業分析を実行</button>
+    </div>
+    <div class="status-line" id="analyze-status"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="card">
+      <div class="card-title">会社概要</div>
+      <div class="co-name" id="r-company-name"></div>
+      <div class="dgrid">
+        <div class="di"><div class="dilbl">業種</div><div class="dival" id="r-industry">—</div></div>
+        <div class="di"><div class="dilbl">設立</div><div class="dival" id="r-founded">—</div></div>
+        <div class="di"><div class="dilbl">本社所在地</div><div class="dival" id="r-hq">—</div></div>
+        <div class="di"><div class="dilbl">事業内容</div><div class="dival" id="r-business">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">店舗数</div>
+      <div class="dgrid">
+        <div class="di"><div class="dilbl">推定店舗数</div><div class="dival" id="r-store-estimate">—</div></div>
+        <div class="di"><div class="dilbl">主な展開エリア</div><div class="dival" id="r-store-areas">—</div></div>
+      </div>
+      <div style="margin-top:10px" id="r-store-confidence"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">競合会社</div>
+      <div class="tags" id="r-competitors"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">MEO対策状況(店舗別)</div>
+      <div class="meo-summary" id="r-meo-summary"></div>
+      <div id="r-stores"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">業界ニュース(直近6ヶ月)</div>
+      <div id="r-news"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">参照した主な情報源</div>
+      <div class="sources-list" id="r-sources"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">商談トーク案</div>
+      <button class="btn btn-primary" id="talk-btn" onclick="runSalesTalk()">💬 商談トーク案を作成</button>
+      <div class="status-line" id="talk-status"></div>
+      <div class="talk-output" id="talk-output"></div>
+      <button class="btn btn-ghost btn-sm" id="talk-copy-btn" style="display:none;margin-top:10px" onclick="copyTalk()">コピー</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentAnalysis = null;
+let storeChecks = {}; // { [storeName]: { review_reply, photo_owner, recent_posts, last_post_date } } セッション内のみ保持(永続化しない)
+let busy = false;
+
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+async function callAiWorker(payload) {
+  const extractApiUrl = window.APP_CONFIG ? window.APP_CONFIG.EXTRACT_API_URL : null;
+  if (!extractApiUrl || extractApiUrl.includes('REPLACE')) {
+    throw new Error('EXTRACT_API_URL が未設定です（config.js を確認してください）');
+  }
+  let res;
+  try {
+    res = await fetch(extractApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    throw new Error('APIへの接続に失敗しました。ネットワーク設定を確認してください');
+  }
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(result.error || ('AI呼び出しエラー(' + res.status + ')'));
+  }
+  return result;
+}
+
+function setStatus(el, text, kind) {
+  el.textContent = text;
+  el.className = 'status-line ' + (kind || '');
+}
+
+function mapsUrl(name, address) {
+  const q = [name, address].filter(Boolean).join(' ');
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+}
+
+async function runAnalysis() {
+  if (busy) return;
+  const input = document.getElementById('company-input').value.trim();
+  const statusEl = document.getElementById('analyze-status');
+  if (!input) {
+    setStatus(statusEl, '企業名またはURLを入力してください', 'err');
+    return;
+  }
+  busy = true;
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  setStatus(statusEl, '', 'pending');
+  statusEl.innerHTML = '<span class="spinner"></span>Web検索しながら分析しています…(数十秒かかります)';
+  document.getElementById('results').style.display = 'none';
+
+  try {
+    const result = await callAiWorker({ type: 'company_analysis', input });
+    currentAnalysis = result;
+    storeChecks = {};
+    renderResults(result);
+    setStatus(statusEl, '分析が完了しました', 'ok');
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('talk-output').style.display = 'none';
+    document.getElementById('talk-copy-btn').style.display = 'none';
+    setStatus(document.getElementById('talk-status'), '', '');
+  } catch (e) {
+    setStatus(statusEl, 'エラー: ' + e.message, 'err');
+  } finally {
+    busy = false;
+    btn.disabled = false;
+  }
+}
+
+function renderResults(a) {
+  const ov = a.overview || {};
+  document.getElementById('r-company-name').textContent = a.company_name || '不明';
+  document.getElementById('r-industry').textContent = ov.industry || '不明';
+  document.getElementById('r-founded').textContent = ov.founded || '不明';
+  document.getElementById('r-hq').textContent = ov.hq || '不明';
+  document.getElementById('r-business').textContent = ov.business || '不明';
+
+  const sc = a.store_count || {};
+  document.getElementById('r-store-estimate').textContent = sc.estimate || '不明';
+  document.getElementById('r-store-areas').textContent = sc.areas || '不明';
+  const confMap = { high: ['high', '確度: 高'], medium: ['medium', '確度: 中'], low: ['low', '確度: 低'] };
+  const conf = confMap[sc.confidence];
+  document.getElementById('r-store-confidence').innerHTML = conf
+    ? `<span class="badge badge-${conf[0]}">${conf[1]}</span>`
+    : '';
+
+  const competitors = Array.isArray(a.competitors) ? a.competitors : [];
+  document.getElementById('r-competitors').innerHTML = competitors.length
+    ? competitors.map(c => `<div class="comp-tag"><b>${esc(c.name)}</b> <span>${esc(c.reason || '')}</span></div>`).join('')
+    : '<div class="empty-note">競合情報は見つかりませんでした</div>';
+
+  const meo = a.meo_status || {};
+  document.getElementById('r-meo-summary').innerHTML =
+    `<b>総合評価:</b> ${esc(meo.overall_assessment || '不明')}<br><b>提案の切り口:</b> ${esc(meo.opportunity || '不明')}`;
+
+  const stores = Array.isArray(meo.stores) ? meo.stores : [];
+  document.getElementById('r-stores').innerHTML = stores.length ? stores.map((s, i) => {
+    const link = mapsUrl(s.name, s.address);
+    return `<div class="store-card">
+      <div class="store-head">
+        <div><span class="store-name">${esc(s.name || '店舗')}</span> <span class="store-area">${esc(s.area || '')}</span></div>
+      </div>
+      <div class="store-sig-row">
+        <span class="sig-tag">サイテーション: ${esc(s.citation_consistency || '不明')}</span>
+        <span class="sig-tag">構造化データ: ${esc(s.structured_data_signal || '不明')}</span>
+      </div>
+      <a class="maps-link" href="${link}" target="_blank" rel="noopener">📍 Googleマップで確認する →</a>
+      <div class="manual-check">
+        <label class="check-row"><input type="checkbox" onchange="setCheck(${i},'review_reply',this.checked)"> 口コミに返信している</label>
+        <label class="check-row"><input type="checkbox" onchange="setCheck(${i},'photo_owner',this.checked)"> 写真に「オーナー提供」がある</label>
+        <label class="check-row"><input type="checkbox" onchange="setCheck(${i},'recent_posts',this.checked)"> 最新情報(投稿)が発信されている</label>
+        <label class="check-row">最終投稿日 <input type="text" placeholder="例: 2026/07" onchange="setCheck(${i},'last_post_date',this.value)"></label>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-note">店舗情報は見つかりませんでした</div>';
+
+  const news = Array.isArray(a.industry_news) ? a.industry_news : [];
+  document.getElementById('r-news').innerHTML = news.length ? news.map(n => `
+    <div class="news-item">
+      <div class="news-title">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>` : esc(n.title)}</div>
+      <div class="news-meta">${esc(n.date || '')}${n.date && n.source ? ' ・ ' : ''}${esc(n.source || '')}</div>
+      <div class="news-summary">${esc(n.summary || '')}</div>
+    </div>
+  `).join('') : '<div class="empty-note">直近6ヶ月以内の関連ニュースは見つかりませんでした</div>';
+
+  const sources = Array.isArray(a.sources) ? a.sources : [];
+  document.getElementById('r-sources').innerHTML = sources.length
+    ? sources.map(u => `<div><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></div>`).join('')
+    : '<div class="empty-note">情報源は記録されませんでした</div>';
+}
+
+function setCheck(storeIndex, field, value) {
+  const stores = (currentAnalysis && currentAnalysis.meo_status && currentAnalysis.meo_status.stores) || [];
+  const store = stores[storeIndex];
+  if (!store) return;
+  const key = store.name || ('store' + storeIndex);
+  if (!storeChecks[key]) storeChecks[key] = { name: key };
+  storeChecks[key][field] = value;
+}
+
+async function runSalesTalk() {
+  if (busy || !currentAnalysis) return;
+  busy = true;
+  const btn = document.getElementById('talk-btn');
+  const statusEl = document.getElementById('talk-status');
+  btn.disabled = true;
+  setStatus(statusEl, '', 'pending');
+  statusEl.innerHTML = '<span class="spinner"></span>トーク案を作成しています…';
+
+  try {
+    const result = await callAiWorker({
+      type: 'sales_talk',
+      analysis: currentAnalysis,
+      storeChecks: Object.values(storeChecks)
+    });
+    const out = document.getElementById('talk-output');
+    out.textContent = result.talk || '';
+    out.style.display = 'block';
+    document.getElementById('talk-copy-btn').style.display = 'inline-flex';
+    setStatus(statusEl, '作成しました', 'ok');
+  } catch (e) {
+    setStatus(statusEl, 'エラー: ' + e.message, 'err');
+  } finally {
+    busy = false;
+    btn.disabled = false;
+  }
+}
+
+async function copyTalk() {
+  const text = document.getElementById('talk-output').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('talk-copy-btn');
+    const original = btn.textContent;
+    btn.textContent = 'コピーしました';
+    setTimeout(() => btn.textContent = original, 1500);
+  } catch (e) {
+    alert('コピーに失敗しました。手動で選択してコピーしてください。');
+  }
+}
+
+document.getElementById('company-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runAnalysis();
+});
+</script>
+<script src="config.js"></script>
+</body>
+</html>

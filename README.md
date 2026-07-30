@@ -9,7 +9,8 @@ Cowork非依存。静的ファイル一式をhttp(s)で配信するだけで動�
 - `slack.js` — Slack Incoming Webhookへの投稿処理
 - `gmail.js` — Google Identity Services認証、Gmail検索・スレッド取得・下書き作成（Gmail REST API直接呼び出し）
 - `app.js` — UIイベントのワイヤリング
-- `worker/` — 文字起こし→AI抽出プロキシ（Cloudflare Worker）。GEMINI_API_KEYはここにだけ保管し、ブラウザには渡さない。
+- `worker/` — 文字起こし→AI抽出プロキシ（Cloudflare Worker）。GEMINI_API_KEYはここにだけ保管し、ブラウザには渡さない。同じWorkerが商談前準備（企業分析・商談トーク生成）のプロキシも兼ねる。
+- `office.html` / `orders.html` / `prep.html` — バーチャルオフィス／資料作成会社／商談前準備（企業分析）の各画面。いずれもFirebase Realtime DBでタスク・発注・売上目標を共有する。
 
 ## セットアップ手順
 
@@ -55,6 +56,7 @@ Slack管理画面で `#渡部チーム--26年` チャンネル宛のIncoming Web
    完了すると `https://meeting-to-slack-extract.<あなたのアカウント>.workers.dev` のようなURLが発行される。
 6. そのURLを `config.js` の `EXTRACT_API_URL` に設定する
 7. `worker/src/index.js` 内の `ALLOWED_ORIGIN` が実際のホスティング先URLと一致しているか確認する（異なる場合はCORSエラーになる）
+8. 商談前準備（`prep.html`）の企業分析は、Anthropic APIではなくGemini組み込みのGoogle検索グラウンディング機能を使うため、**追加のAPIキーや課金設定は不要**（同じ`GEMINI_API_KEY`・同じWorkerをそのまま使う）。既存Workerを更新した際は `wrangler deploy` の再実行を忘れないこと。
 
 ### 4. ホスティング
 社内向けの静的ホスティング環境（GitHub Pages等）にファイル一式をアップロードする。
@@ -69,3 +71,5 @@ Slack管理画面で `#渡部チーム--26年` チャンネル宛のIncoming Web
 - Slack投稿の成否はアプリ上では確認できない（Incoming WebhookのCORS仕様のため）。
 - Gmail下書き作成はブラウザ発行のアクセストークン（Google Identity Services Token Client）に依存するため、トークンの有効期限が切れた場合は初回操作時と同様に再度Googleログインが求められる。
 - AI抽出（Worker経由）はGoogle Gemini APIの無料枠を利用。社内利用規模なら無料枠内に収まる想定で、課金設定は不要。
+- 商談前準備（`prep.html`）の企業分析は、当初の仕様書ではAnthropic API（Claude + web_searchツール）を想定していたが、課金・カード登録が一切できない制約があるため、Gemini APIの「Google検索グラウンディング」機能で代替している。仕組み・出力JSON構造は仕様書に準拠しているが、検索の精度・挙動はAnthropicのweb_searchと完全には一致しない場合がある。またGemini APIの検索グラウンディング自体の無料枠上限（1日あたりのリクエスト数など）はGoogle側の方針変更があり得るため、Google AI Studioのダッシュボードで随時確認すること。
+- 手動チェック項目（口コミ返信・写真オーナー提供・最新情報の有無）はセッション内のみ保持され、ページを再読み込みすると消える（仕様通り、永続化はしていない）。
