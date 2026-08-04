@@ -678,6 +678,11 @@ function fmtMan(n) {
   return Math.round(n || 0).toLocaleString('ja-JP') + '万円';
 }
 
+function currentMonthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 function fbSetSales(key, data) {
   const { db, ref, set } = window._fb;
   set(ref(db, 'team2/sales/' + key), data);
@@ -734,16 +739,33 @@ function renderSalesUI() {
 function saveSales() {
   const target = Number(document.getElementById('sales-target-input').value) || 0;
   const current = Number(document.getElementById('sales-current-input').value) || 0;
-  salesData[currentModalKey] = { target, current };
-  fbSetSales(currentModalKey, { target, current });
+  const entry = { target, current, month: currentMonthKey() };
+  salesData[currentModalKey] = entry;
+  fbSetSales(currentModalKey, entry);
   renderSalesUI();
   openPersonModal(currentModalKey);
 }
 
+// 月が変わったら実績(current)だけ0にリセットし、目標(target)は引き継ぐ。
+// サーバー側の常駐処理は無いため、月が変わった後に誰かがオフィス画面を開いたタイミングで反映される。
 function initSales() {
   const { db, ref, onValue } = window._fb;
   onValue(ref(db, 'team2/sales'), snap => {
-    salesData = snap.val() || {};
+    const raw = snap.val() || {};
+    const mk = currentMonthKey();
+    const next = {};
+    PEOPLE.forEach(p => {
+      const s = raw[p.key];
+      if (!s) return;
+      if (s.month === mk) {
+        next[p.key] = s;
+      } else {
+        const resetEntry = { target: s.target || 0, current: 0, month: mk };
+        next[p.key] = resetEntry;
+        fbSetSales(p.key, resetEntry);
+      }
+    });
+    salesData = next;
     renderSalesUI();
   });
 }
