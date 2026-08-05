@@ -10,7 +10,7 @@ Cowork非依存。静的ファイル一式をhttp(s)で配信するだけで動�
 - `gmail.js` — Google Identity Services認証、Gmail検索・スレッド取得・下書き作成（Gmail REST API直接呼び出し）
 - `app.js` — UIイベントのワイヤリング
 - `worker/` — 文字起こし→AI抽出プロキシ（Cloudflare Worker）。GEMINI_API_KEYはここにだけ保管し、ブラウザには渡さない。
-- `office.html` / `orders.html` — バーチャルオフィス／資料作成会社の各画面。いずれもFirebase Realtime DBでタスク・発注・売上目標を共有する。
+- `office.html` — バーチャルオフィス。Firebase Realtime DBでタスク・売上目標を共有する。
 
 ## セットアップ手順
 
