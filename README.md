@@ -8,9 +8,11 @@ Cowork非依存。静的ファイル一式をhttp(s)で配信するだけで動�
 - `constants.js` — 固定値（社内ドメイン、CCアドレス、担当者メンション一覧）
 - `slack.js` — Slack Incoming Webhookへの投稿処理
 - `gmail.js` — Google Identity Services認証、Gmail検索・スレッド取得・下書き作成（Gmail REST API直接呼び出し）
-- `app.js` — UIイベントのワイヤリング
+- `app.js` — UIイベントのワイヤリング（index.html用）
 - `worker/` — 文字起こし→AI抽出プロキシ（Cloudflare Worker）。GEMINI_API_KEYはここにだけ保管し、ブラウザには渡さない。
 - `office.html` — バーチャルオフィス。Firebase Realtime DBでタスク・売上目標を共有する。
+- `proposal.html` — 資料作成ページ。Claude Codeの`sales-proposal`スキル（`~/.claude/skills/sales-proposal/`）に渡す入力（商材・相手企業情報・商談条件など）をフォームでまとめ、`input-template.md`形式のテキストとしてコピーする。index.htmlとは独立したページ（商談日・会社名・文字起こし等はこのページで改めて入力する）。提案書pptxの生成自体はこのアプリでは行わない（Claude Code側の役割）。
+- `proposal-export.js` — proposal.htmlの処理本体（フォーム読み取り・テキスト整形・クリップボードコピー）。
 
 ## セットアップ手順
 

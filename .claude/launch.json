@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "meeting-to-slack-static",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8791", "--directory", "C:\\Users\\yusuke-watabe\\meeting-to-slack-app"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Users\\yusuke-watabe\\meeting-to-slack-app\\static-server.js"],
       "port": 8791
     }
   ]
