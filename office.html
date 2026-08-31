@@ -94,7 +94,9 @@ body{
 .clock-hand.hh{width:2px;height:9px;transform:translateX(-50%) rotate(50deg)}
 .clock-hand.mh{width:1.5px;height:13px;transform:translateX(-50%) rotate(140deg)}
 .target-board{position:absolute;left:20px;top:14px;width:225px;z-index:2;background:#FFFDF6;border:3px solid var(--wood2);border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,.2);padding:8px 13px 9px}
-.target-board-title{font-size:12px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:6px;padding-bottom:5px;border-bottom:1px dashed var(--border2)}
+.target-board-title{font-size:12px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:6px;padding-bottom:5px;border-bottom:1px dashed var(--border2);position:relative}
+.reset-sales-btn{position:absolute;right:0;top:-2px;font-size:9.5px;font-weight:600;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:2px 7px;cursor:pointer}
+.reset-sales-btn:hover{color:var(--text2);border-color:var(--text3)}
 .target-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);padding:2.5px 0}
 .target-row .t-name{font-weight:600;color:var(--text2);white-space:nowrap}
 .target-row .t-val{font-family:var(--mono);font-weight:700;color:var(--text);white-space:nowrap}
@@ -292,7 +294,7 @@ textarea.qinp{resize:vertical;min-height:44px;line-height:1.4}
         </div>
       </div>
       <div class="target-board">
-        <div class="target-board-title">📊 進捗表</div>
+        <div class="target-board-title">📊 進捗表 <button class="reset-sales-btn" onclick="resetAllSales()" title="全員の目標・実績を0にする">🔄 全員リセット</button></div>
         <div id="target-board-rows"></div>
       </div>
       <div class="room" id="room">
@@ -627,6 +629,18 @@ function renderSalesUI() {
   document.getElementById('sales-summary-text').innerHTML = totalTarget > 0
     ? `目標 <span class="num">${fmtMan(totalTarget)}</span>　実績 <span class="num">${fmtMan(totalCurrent)}</span>　残り <span class="num">${fmtMan(totalRemain)}</span>（${totalPct}%）`
     : 'まだ目標が設定されていません';
+}
+
+// 全員の目標・実績を0にリセットする（元に戻せないため確認ダイアログを挟む）。
+function resetAllSales() {
+  if (!confirm('全員の売上目標・実績を0にリセットします。よろしいですか？（元に戻せません）')) return;
+  const mk = currentMonthKey();
+  PEOPLE.forEach(p => {
+    const entry = { target: 0, current: 0, month: mk };
+    salesData[p.key] = entry;
+    fbSetSales(p.key, entry);
+  });
+  renderSalesUI();
 }
 
 function saveSales() {
