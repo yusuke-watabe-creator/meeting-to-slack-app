@@ -334,12 +334,17 @@ async function handleMiitelWebhook(request, env) {
       mailBody,
     });
     if (env.SLACK_WEBHOOK_URL) {
-      const slackRes = await fetch(env.SLACK_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: slackMessage }),
-      });
-      result.steps.slack = slackRes.ok ? 'ok' : 'failed: status ' + slackRes.status;
+      try {
+        const slackRes = await fetch(env.SLACK_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: slackMessage }),
+        });
+        result.steps.slack = slackRes.ok ? 'ok' : 'failed: status ' + slackRes.status;
+      } catch (e) {
+        // SlackのURLが未設定・不正でも、タスクボード登録は続行する。
+        result.steps.slack = 'failed: ' + e.message;
+      }
     } else {
       result.steps.slack = 'skipped: SLACK_WEBHOOK_URL未設定';
     }
