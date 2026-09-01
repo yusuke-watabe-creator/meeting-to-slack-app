@@ -154,8 +154,14 @@ body{
 /* ---- character sprite ---- */
 .person{position:absolute;width:52px;height:80px;transform:translate(-50%,-100%);z-index:5;cursor:pointer}
 .person-inner{position:relative;width:100%;height:100%}
-.mood-icon{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:14px;opacity:0;transition:opacity .2s}
-.mood-icon.show{opacity:1}
+.meeting-badge{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:4px;font-size:14px;opacity:0;transition:opacity .2s}
+.meeting-badge.show{opacity:1}
+.doc-stack{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;display:flex;flex-direction:column-reverse;align-items:center;opacity:0;transition:opacity .2s}
+.doc-stack.show{opacity:1}
+.doc-sheet{width:17px;height:4px;background:#F7F3E9;border:1px solid #C9C1AC;border-radius:1px;margin-top:-2.5px;box-shadow:0 1px 1px rgba(0,0,0,.1)}
+.doc-sheet:nth-child(odd){transform:rotate(-5deg)}
+.doc-sheet:nth-child(even){transform:rotate(4deg)}
+.doc-stack.warn .doc-sheet{background:#FDEAED;border-color:#C0253A}
 .name-tag{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:700;color:var(--text2);background:rgba(255,255,255,.85);padding:0px 5px;border-radius:8px;white-space:nowrap}
 .char{overflow:visible;display:block}
 .facing-left .char{transform:scaleX(-1)}
@@ -784,7 +790,8 @@ function buildRoom() {
     personEl.className = 'person state-idle';
     personEl.innerHTML = `
       <div class="person-inner">
-        <span class="mood-icon">🥱</span>
+        <span class="meeting-badge">📅</span>
+        <span class="doc-stack"></span>
         ${charSVG(p.color, p.female, p.suit)}
         <span class="sparkle sparkle-1">✨</span>
         <span class="sparkle sparkle-2">🎉</span>
@@ -823,7 +830,8 @@ function buildRoom() {
       prevCount: 0,
       inMeeting: false,
       meetingSeat: null,
-      taskIcon: '🥱',
+      taskCount: 0,
+      hasOverdue: false,
       taskStatusText: 'のんびり中'
     };
   });
@@ -838,9 +846,9 @@ function applyData(tasks) {
     const overdue = mine.filter(t => t.due && t.due < today());
     const upcoming = mine.filter(t => t.due).sort((a, b) => a.due.localeCompare(b.due))[0];
 
-    let mood = 'idle', statusText = 'のんびり中', icon = '🥱';
-    if (overdue.length) { mood = 'overdue'; statusText = '期限切れ対応中…！'; icon = '😰'; }
-    else if (mine.length) { mood = 'working'; statusText = '作業中'; icon = '⌨️'; }
+    let mood = 'idle', statusText = 'のんびり中';
+    if (overdue.length) { mood = 'overdue'; statusText = '期限切れ対応中…！'; }
+    else if (mine.length) { mood = 'working'; statusText = '作業中'; }
 
     if (mine.length < c.prevCount) {
       c.celebrateUntil = now + 2600;
@@ -848,7 +856,8 @@ function applyData(tasks) {
     }
     c.prevCount = mine.length;
     c.mood = mood;
-    c.taskIcon = icon;
+    c.taskCount = mine.length;
+    c.hasOverdue = overdue.length > 0;
     c.taskStatusText = statusText;
     refreshDisplay(p.key);
 
@@ -861,14 +870,29 @@ function applyData(tasks) {
   });
 }
 
-// タスク由来のアイコン/ステータスと、カレンダー由来の「会議中」を合成して表示する。
+const MAX_DOC_SHEETS = 6;
+
+// タスクの件数を書類の山（積み上げたシート枚数）で表示し、カレンダー由来の「会議中」の時だけ📅に切り替える。
 function refreshDisplay(key) {
   const c = chars[key];
   if (!c) return;
-  const icon = c.inMeeting ? '📅' : c.taskIcon;
   const statusText = c.inMeeting ? '会議中' : c.taskStatusText;
-  c.el.querySelector('.mood-icon').textContent = icon;
   c.legendEl.querySelector('.legend-status').textContent = statusText;
+
+  const meetingBadge = c.el.querySelector('.meeting-badge');
+  const docStack = c.el.querySelector('.doc-stack');
+  meetingBadge.classList.toggle('show', !!c.inMeeting);
+
+  const count = c.taskCount || 0;
+  if (c.inMeeting || count === 0) {
+    docStack.classList.remove('show');
+    docStack.innerHTML = '';
+    return;
+  }
+  const sheetCount = Math.min(count, MAX_DOC_SHEETS);
+  docStack.innerHTML = Array.from({ length: sheetCount }, () => '<span class="doc-sheet"></span>').join('');
+  docStack.classList.toggle('warn', !!c.hasOverdue);
+  docStack.classList.add('show');
 }
 
 function assignMeetingSeat() {
@@ -959,8 +983,10 @@ function tick(ts) {
     c.el.classList.toggle('celebrating', !!c.celebrateUntil);
     c.el.className = c.el.className.replace(/state-\S+/g, '').trim();
     c.el.classList.add('state-' + (c.inMeeting ? 'meeting' : c.mood));
-    const moodIcon = c.el.querySelector('.mood-icon');
-    moodIcon.classList.toggle('show', !walking && !c.celebrateUntil);
+    const visible = !walking && !c.celebrateUntil;
+    c.el.querySelector('.meeting-badge').classList.toggle('show', visible && !!c.inMeeting);
+    const docStack = c.el.querySelector('.doc-stack');
+    if (docStack.children.length) docStack.classList.toggle('show', visible && !c.inMeeting);
   });
 
   requestAnimationFrame(tick);
